@@ -1,0 +1,111 @@
+/* Global styles */
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+:root {
+  --bg-main: #0B0F1A;
+  --bg-secondary: #121826;
+
+  --text-primary: #E6EAF2;
+  --text-muted: #9AA4B2;
+
+  --accent-main: #6C8CFF;
+  --accent-glow: #8A6CFF;
+  
+  --font-sans: 'Inter', sans-serif;
+  --font-display: 'Inter', sans-serif;
+}
+
+body {
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+/* Glassmorphism System */
+.glass {
+  backdrop-filter: blur(20px);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.glass-panel {
+  backdrop-filter: blur(20px);
+  background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Glow System (Tesla Feel + Premium Effects) */
+.glow {
+  box-shadow:
+    0 0 20px rgba(108,140,255,0.4),
+    0 0 60px rgba(138,108,255,0.25);
+  transition: all 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.glow-hover:hover {
+  box-shadow:
+    0 0 30px rgba(108,140,255,0.6),
+    0 0 80px rgba(138,108,255,0.4);
+  transform: translateY(-2px);
+  background: rgba(108,140,255,0.05); /* Slight brightness boost */
+}
+
+/* Light System */
+.premium-light-bg {
+  background: radial-gradient(
+    circle at 30% 20%,
+    rgba(108,140,255,0.12),
+    transparent 60%
+  );
+}
+
+/* Base Utility Classes */
+.text-glow {
+  text-shadow: 0 0 20px rgba(108,140,255,0.5);
+}
+
+.offset-y-12 { transform: translateY(3rem); }
+.offset-y-24 { transform: translateY(6rem); }
+.offset-y-minus-12 { transform: translateY(-3rem); }
+
+.huge-text {
+  font-size: clamp(3.5rem, 8vw, 8rem);
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+
+.subtitle-text {
+  font-size: clamp(1.2rem, 2vw, 1.5rem);
+  line-height: 1.5;
+  color: var(--text-muted);
+  font-weight: 300;
+}
+
+/* Scrollbar clean */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-main);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--text-muted);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-main);
+}
