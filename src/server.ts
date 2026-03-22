@@ -17,8 +17,6 @@ const angularApp = new AngularNodeAppEngine();
 
 // --- Backend API ---
 const allowedEmails = ['azeem.makhdum6@gmail.com', 'abbas585@gmail.com'];
-const otps = new Map<string, { code: string, expires: number }>();
-
 // Simple file-based DB
 const DB_FILE = join(import.meta.dirname, 'data.json');
 function readDB() {

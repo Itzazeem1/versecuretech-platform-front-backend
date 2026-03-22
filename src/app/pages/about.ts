@@ -1,4 +1,4 @@
-import { Component, afterNextRender, OnDestroy, ChangeDetectionStrategy, inject, signal, OnInit } from '@angular/core';
+import { Component, afterNextRender, OnDestroy, inject, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HeaderComponent } from '../components/header';
 import { FooterComponent } from '../components/footer';
@@ -90,6 +90,7 @@ export class AboutComponent implements OnInit, OnDestroy {
   public store = inject(StoreService);
   private supabase = inject(SupabaseService);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public pageData = signal<any>(null);
 
   ngOnInit() {
@@ -111,24 +112,24 @@ export class AboutComponent implements OnInit, OnDestroy {
     afterNextRender(async () => {
       const { ScrollTrigger } = await import('gsap/ScrollTrigger');
       gsap.registerPlugin(ScrollTrigger);
-      this.initGSAP(ScrollTrigger);
+      this.initGSAP();
     });
   }
 
-  private initGSAP(ScrollTrigger: typeof import('gsap/ScrollTrigger').ScrollTrigger) {
+  private initGSAP() {
     this.ctx = gsap.context(() => {
       const speed = this.store.animationSpeed();
 
       gsap.set('.scene-anim', { y: 80, opacity: 0 });
 
       const sections = gsap.utils.toArray('.scene-anim');
-      sections.forEach((section: any) => {
-        gsap.to(section, {
+      sections.forEach((section: unknown) => {
+        gsap.to(section as gsap.DOMTarget, {
           opacity: 1,
           y: 0,
           duration: 1.2 / speed,
           scrollTrigger: {
-            trigger: section,
+            trigger: section as gsap.DOMTarget,
             start: "top 85%",
             scrub: true
           }
@@ -136,7 +137,7 @@ export class AboutComponent implements OnInit, OnDestroy {
       });
 
       const buttons = document.querySelectorAll('.tesla-btn');
-      buttons.forEach((btn: any) => {
+      buttons.forEach((btn: Element) => {
         btn.addEventListener('mouseenter', () => gsap.to(btn, { scale: 1.05, duration: 0.3, ease: 'power2.out', boxShadow: '0 0 30px rgba(108,140,255,0.4)' }));
         btn.addEventListener('mouseleave', () => gsap.to(btn, { scale: 1, duration: 0.3, ease: 'power2.out', boxShadow: 'none' }));
       });

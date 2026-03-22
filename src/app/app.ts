@@ -1,14 +1,19 @@
-import {ChangeDetectionStrategy, Component, afterNextRender, OnDestroy, HostListener, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, afterNextRender, inject, OnDestroy, OnInit, signal} from '@angular/core';
 import {RouterOutlet} from '@angular/router';
 import {LoaderComponent} from './components/loader';
 import {CookieBannerComponent} from './components/cookie-banner';
-import {CommonModule} from '@angular/common';
+import {CommonModule, isPlatformBrowser} from '@angular/common';
 import Lenis from 'lenis';
+import { SupabaseService } from './services/supabase.service';
+import { PLATFORM_ID } from '@angular/core';
 
 @Component({
   changeDetection: ChangeDetectionStrategy.OnPush,
   selector: 'app-root',
   imports: [RouterOutlet, LoaderComponent, CookieBannerComponent, CommonModule],
+  host: {
+    '(document:mousemove)': 'onMouseMove($event)'
+  },
   template: `
     <app-loader></app-loader>
     <router-outlet />
@@ -20,8 +25,11 @@ import Lenis from 'lenis';
   `,
   styleUrl: './app.css',
 })
-export class App implements OnDestroy {
+export class App implements OnInit, OnDestroy {
   private lenis?: Lenis;
+  private supabase = inject(SupabaseService);
+  private platformId = inject(PLATFORM_ID);
+  private mouseOverListener?: (e: Event) => void;
   
   cursorX = signal(-100);
   cursorY = signal(-100);
@@ -29,6 +37,8 @@ export class App implements OnDestroy {
 
   constructor() {
     afterNextRender(() => {
+      if (!isPlatformBrowser(this.platformId)) return;
+
       this.lenis = new Lenis({
         autoRaf: true,
         duration: 1.2,
@@ -40,14 +50,17 @@ export class App implements OnDestroy {
     });
   }
 
-  @HostListener('document:mousemove', ['$event'])
+  ngOnInit() {
+    this.supabase.checkSession();
+  }
+
   onMouseMove(e: MouseEvent) {
     this.cursorX.set(e.clientX);
     this.cursorY.set(e.clientY);
   }
 
   private setupCursorListeners() {
-    document.addEventListener('mouseover', (e) => {
+    this.mouseOverListener = (e: Event) => {
       const target = e.target as HTMLElement;
       if (target.tagName.toLowerCase() === 'a' || 
           target.tagName.toLowerCase() === 'button' || 
@@ -58,10 +71,15 @@ export class App implements OnDestroy {
       } else {
         this.isHovering.set(false);
       }
-    });
+    };
+
+    document.addEventListener('mouseover', this.mouseOverListener);
   }
 
   ngOnDestroy() {
+    if (this.mouseOverListener && isPlatformBrowser(this.platformId)) {
+      document.removeEventListener('mouseover', this.mouseOverListener);
+    }
     if (this.lenis) {
       this.lenis.destroy();
     }

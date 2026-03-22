@@ -1,4 +1,4 @@
-import { Injectable, inject, PLATFORM_ID, signal } from '@angular/core';
+import { Injectable, inject, PLATFORM_ID } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { io, Socket } from 'socket.io-client';
 import { StoreService } from './store.service';
@@ -24,21 +24,21 @@ export class SocketService {
       });
 
       // Admin specific events could be added here
-      this.socket.on('globalStateUpdate', (state: any) => {
-        if (state.animationSpeed !== undefined) this.store.setAnimationSpeed(state.animationSpeed);
-        if (state.glowIntensity !== undefined) this.store.setGlowIntensity(state.glowIntensity);
-        if (state.enable3D !== undefined) {
-           if (state.enable3D !== this.store.enable3D()) this.store.toggle3D();
+      this.socket.on('globalStateUpdate', (state: Record<string, unknown>) => {
+        if (typeof state['animationSpeed'] === 'number') this.store.setAnimationSpeed(state['animationSpeed']);
+        if (typeof state['glowIntensity'] === 'number') this.store.setGlowIntensity(state['glowIntensity']);
+        if (typeof state['enable3D'] === 'boolean') {
+           if (state['enable3D'] !== this.store.enable3D()) this.store.toggle3D();
         }
-        if (state.enableAnimations !== undefined) {
-           if (state.enableAnimations !== this.store.enableAnimations()) this.store.toggleAnimations();
+        if (typeof state['enableAnimations'] === 'boolean') {
+           if (state['enableAnimations'] !== this.store.enableAnimations()) this.store.toggleAnimations();
         }
       });
     }
   }
 
   // Admin methods
-  updateGlobalState(state: any) {
+  updateGlobalState(state: Record<string, unknown>) {
     if (this.socket && this.store.isAdmin()) {
       this.socket.emit('adminUpdateState', state);
     }
