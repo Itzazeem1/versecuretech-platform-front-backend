@@ -20,8 +20,8 @@ import gsap from 'gsap';
     <main class="relative z-10 w-full overflow-hidden text-[var(--text-primary)]">
       
       <!-- 1. Hero Section -->
-      <section class="h-screen w-full flex flex-col justify-center items-center relative" data-scene="intro">
-        <div class="max-w-5xl mx-auto px-6 text-center">
+      <section class="hero-section h-screen w-full flex flex-col justify-center items-center relative" data-scene="intro">
+        <div class="hero-content max-w-5xl mx-auto px-6 text-center">
           <h1 class="huge-text font-display font-bold tracking-tight mb-8">
             {{ pageData()?.heroTitle || 'We build systems that scale.' }}
           </h1>
@@ -32,11 +32,11 @@ import gsap from 'gsap';
       </section>
 
       <!-- 2. Asymmetric Philosophy Section -->
-      <section class="section py-32 w-full relative" data-scene="active">
+      <section class="philosophy-section section py-32 w-full relative" data-scene="active">
         <div class="max-w-6xl mx-auto px-6">
           <div class="flex flex-col md:flex-row gap-16 md:gap-32 items-center">
             
-            <div class="w-full md:w-5/12 ml-auto md:offset-y-12">
+            <div class="philosophy-text w-full md:w-5/12 ml-auto md:offset-y-12">
               <h2 class="text-4xl md:text-5xl font-display font-medium mb-8 leading-tight">
                 {{ pageData()?.philosophyTitle || 'Bridge vision and execution.' }}
               </h2>
@@ -50,10 +50,11 @@ import gsap from 'gsap';
               </button>
             </div>
 
-            <div class="w-full md:w-6/12 relative">
+            <div class="philosophy-image w-full md:w-6/12 relative">
               <div class="glass-panel rounded-[2rem] p-2 h-[500px] flex items-center justify-center glow-hover border border-[var(--text-primary)]/5 relative overflow-hidden">
-                <div class="absolute inset-0 bg-[url('/assets/images/abstract_violet_glass_1774035496290.png')] bg-cover bg-center opacity-70 hover:opacity-100 transition-opacity duration-1000 transform hover:scale-105 pointer-events-none"></div>
-                <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-main)] via-transparent to-transparent opacity-80 pointer-events-none"></div>
+                <div class="absolute inset-0 bg-gradient-to-br from-[var(--accent-main)]/20 via-transparent to-[var(--accent-main)]/10 opacity-70 hover:opacity-100 transition-opacity duration-1000 transform hover:scale-105 pointer-events-none"></div>
+                <div class="absolute inset-0 bg-gradient-to-tr from-[var(--bg-main)] via-transparent to-transparent opacity-80 pointer-events-none"></div>
+                <div class="absolute w-64 h-64 bg-[var(--accent-main)]/30 blur-[100px] rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
               </div>
             </div>
 
@@ -76,12 +77,13 @@ import gsap from 'gsap';
           <div class="flex flex-col gap-12 md:gap-24 relative">
              @for (svc of pageData()?.servicesList; track $index) {
                 <!-- Alternate alignment automatically -->
-                <div class="flex flex-col md:flex-row gap-8 items-end w-full" [class.md:flex-row-reverse]="$index % 2 !== 0" [class.md:offset-y-12]="$index % 2 !== 0">
+                <div class="service-item flex flex-col md:flex-row gap-8 items-end w-full" [class.md:flex-row-reverse]="$index % 2 !== 0" [class.md:offset-y-12]="$index % 2 !== 0">
                   <div class="w-full md:w-1/3 text-sm text-[var(--accent-main)] font-mono tracking-widest uppercase mb-4 md:mb-0" [class.text-left]="$index % 2 !== 0" [class.md:text-right]="$index % 2 !== 0">
                     {{ svc.category }}
                   </div>
                   <div class="w-full md:w-2/3 glass-panel p-10 md:p-14 rounded-[2rem] glow-hover border border-[var(--text-primary)]/5 relative overflow-hidden group">
-                    <div class="absolute inset-0 bg-[url('/assets/images/cyber_abstract_nodes_1774035517012.png')] bg-cover bg-center opacity-0 group-hover:opacity-10 transition-opacity duration-700 mix-blend-screen pointer-events-none"></div>
+                    <div class="absolute inset-0 bg-gradient-to-r from-[var(--accent-main)]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
+                    <div class="absolute -top-20 -right-20 w-64 h-64 bg-[var(--accent-main)]/20 blur-[120px] rounded-full pointer-events-none"></div>
                     <h3 class="text-3xl font-display font-medium mb-4 relative z-10">{{ svc.title }}</h3>
                     <p class="text-[var(--text-muted)] font-light leading-relaxed relative z-10">{{ svc.description }}</p>
                   </div>
@@ -115,6 +117,7 @@ export class HomeComponent implements OnInit, OnDestroy {
   public store = inject(StoreService);
   private supabase = inject(SupabaseService);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   public pageData = signal<any>(null);
 
   constructor() {
@@ -143,44 +146,77 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   private initGSAP(ScrollTrigger: typeof import('gsap/ScrollTrigger').ScrollTrigger) {
     this.ctx = gsap.context(() => {
-
       const speed = this.store.animationSpeed();
 
-      // Product-Style Scroll Experience (Navigating a product, not scrolling a page)
-      const sections = gsap.utils.toArray('.section');
+      // 1. Hero Cinematic Fade
+      gsap.to('.hero-content', {
+        scrollTrigger: {
+          trigger: '.hero-section',
+          start: 'top top',
+          end: 'bottom top',
+          scrub: true
+        },
+        y: 150,
+        opacity: 0,
+        scale: 0.9,
+        ease: 'none'
+      });
 
-      sections.forEach((section: any) => {
-        gsap.from(section, {
-          opacity: 0,
-          y: 80,
-          duration: 1 / speed,
+      // 2. Lando-style Pinned Section (Philosophy)
+      const philosophyTl = gsap.timeline({
+        scrollTrigger: {
+          trigger: '.philosophy-section',
+          start: 'top top',
+          end: '+=1500',
+          scrub: true,
+          pin: true,
+          anticipatePin: 1
+        }
+      });
+
+      philosophyTl
+        .from('.philosophy-text', { opacity: 0, y: 100, duration: 1 })
+        .from('.philosophy-image', { opacity: 0, scale: 0.8, x: 100, duration: 1 }, '<')
+        .to('.philosophy-text', { opacity: 0, y: -100, duration: 1 }, '+=1')
+        .to('.philosophy-image', { opacity: 0, scale: 1.2, x: -100, duration: 1 }, '<');
+
+      // 3. Services Staggered Reveal
+      const services = gsap.utils.toArray('.service-item');
+      services.forEach((service: unknown, i: number) => {
+        gsap.from(service as gsap.DOMTarget, {
           scrollTrigger: {
-            trigger: section,
-            start: "top 80%",
-            scrub: true
-          }
+            trigger: service as gsap.DOMTarget,
+            start: 'top 80%',
+            end: 'bottom 20%',
+            scrub: 1
+          },
+          x: i % 2 === 0 ? -100 : 100,
+          opacity: 0,
+          duration: 1 / speed
         });
       });
 
       // Track scenes for the Store Service glow adjustments
-      sections.forEach((section: any) => {
+      const sections = gsap.utils.toArray('.section');
+      sections.forEach((section: unknown) => {
+        const el = section as Element;
         ScrollTrigger.create({
-          trigger: section,
+          trigger: el,
           start: 'top center',
           onEnter: () => {
-            const state = section.getAttribute('data-scene');
-            if (state) this.store.setSceneState(state as any);
+            const state = el.getAttribute('data-scene');
+            if (state) this.store.setSceneState(state as 'loading' | 'intro' | 'active' | 'interaction');
           },
           onEnterBack: () => {
-            const state = section.getAttribute('data-scene');
-            if (state) this.store.setSceneState(state as any);
+            const state = el.getAttribute('data-scene');
+            if (state) this.store.setSceneState(state as 'loading' | 'intro' | 'active' | 'interaction');
           }
         });
       });
 
       // Tesla Feel Hover Interactions
       const buttons = document.querySelectorAll('.tesla-btn');
-      buttons.forEach((btn: any) => {
+      buttons.forEach((btn: Element) => {
         btn.addEventListener('mouseenter', () => {
           gsap.to(btn, {
             scale: 1.05,

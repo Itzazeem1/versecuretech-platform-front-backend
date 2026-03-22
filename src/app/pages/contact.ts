@@ -67,26 +67,26 @@ import gsap from 'gsap';
                   <button (click)="submitStatus.set('idle')" class="tesla-btn px-8 py-3 rounded-full border border-[var(--text-primary)]/20 hover:bg-[var(--text-primary)] hover:text-[var(--bg-main)] transition-colors font-mono text-xs uppercase tracking-widest">Acknowledge</button>
                 </div>
               } @else {
-                <form (submit)="submitContact($event)" class="relative z-10 flex flex-col gap-8">
+                    <form (submit)="submitContact($event)" class="relative z-10 flex flex-col gap-8">
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <div class="flex flex-col gap-2 relative">
-                        <label class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Identifier [First]</label>
-                        <input type="text" name="firstName" required class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors">
+                        <label for="firstName" class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Identifier [First]</label>
+                        <input id="firstName" type="text" name="firstName" required class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors">
                      </div>
                      <div class="flex flex-col gap-2 relative">
-                        <label class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Identifier [Last]</label>
-                        <input type="text" name="lastName" required class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors">
+                        <label for="lastName" class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Identifier [Last]</label>
+                        <input id="lastName" type="text" name="lastName" required class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors">
                      </div>
                   </div>
                   
                   <div class="flex flex-col gap-2 relative">
-                     <label class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Return Address [Email]</label>
-                     <input type="email" name="email" required class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors">
+                     <label for="email" class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Return Address [Email]</label>
+                     <input id="email" type="email" name="email" required class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors">
                   </div>
                   
                   <div class="flex flex-col gap-2 relative">
-                     <label class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Payload [Message]</label>
-                     <textarea name="message" rows="4" required class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors resize-none"></textarea>
+                     <label for="message" class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Payload [Message]</label>
+                     <textarea id="message" name="message" rows="4" required class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors resize-none"></textarea>
                   </div>
                   
                   @if (submitStatus() === 'error') {
@@ -183,7 +183,7 @@ export class ContactComponent implements OnDestroy {
 
       // Tesla btn
       const buttons = document.querySelectorAll('.tesla-btn');
-      buttons.forEach((btn: any) => {
+      buttons.forEach((btn: Element) => {
         btn.addEventListener('mouseenter', () => {
           gsap.to(btn, { scale: 1.05, duration: 0.3, ease: 'power2.out', boxShadow: '0 0 30px rgba(108,140,255,0.4)' });
         });

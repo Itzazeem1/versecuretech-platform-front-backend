@@ -28,23 +28,37 @@ import gsap from 'gsap';
             <p class="text-[var(--text-muted)] text-sm">Secure admin gateway</p>
           </div>
 
-          <form (ngSubmit)="otpSent() ? verifyOtpCall() : requestOtpCall()" class="relative z-10 flex flex-col gap-6">
-            @if (!otpSent()) {
-              <div>
-                <label class="block text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-2">Admin Email</label>
-                <input type="email" [ngModel]="email()" (ngModelChange)="email.set($event)" name="email" required class="w-full bg-[var(--bg-secondary)] border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)] transition-colors" placeholder="Admin email">
-              </div>
-            } @else {
-              <div>
-                <label class="block text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-2 text-green-400">Enter 6-Digit Code Sent to Email</label>
-                <input type="text" [ngModel]="otp()" (ngModelChange)="otp.set($event)" name="otp" required maxlength="6" class="w-full bg-[var(--bg-main)] border border-[var(--text-primary)]/20 rounded-xl px-4 py-3 text-center text-3xl tracking-[1em] text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)] transition-colors" placeholder="------">
-              </div>
-            }
+          <form (ngSubmit)="loginWithEmail()" class="relative z-10 flex flex-col gap-6">
+            <div>
+              <label for="admin-email" class="block text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-2">Admin Email</label>
+              <input id="admin-email" type="email" [ngModel]="email()" (ngModelChange)="email.set($event)" name="email" required class="w-full bg-[var(--bg-secondary)] border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)] transition-colors" placeholder="Admin email">
+            </div>
+            <div>
+              <label for="admin-password" class="block text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-2">Password</label>
+              <input id="admin-password" type="password" [ngModel]="password()" (ngModelChange)="password.set($event)" name="password" required class="w-full bg-[var(--bg-secondary)] border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)] transition-colors" placeholder="••••••••">
+            </div>
             
             <button type="submit" [disabled]="loading()" class="tesla-btn w-full py-4 rounded-full bg-[var(--text-primary)] text-[var(--bg-main)] font-bold tracking-widest uppercase text-xs hover:bg-[var(--accent-main)] transition-colors disabled:opacity-50 flex justify-center items-center gap-2">
-              {{ loading() ? 'Authenticating...' : (otpSent() ? 'Verify & Access' : 'Send Fast OTP') }}
+              {{ loading() ? 'Authenticating...' : 'Sign In with Email' }}
             </button>
             
+            <div class="flex items-center gap-4 my-2">
+              <div class="h-px bg-[var(--text-primary)]/10 flex-1"></div>
+              <span class="text-xs text-[var(--text-muted)] uppercase tracking-widest">OR</span>
+              <div class="h-px bg-[var(--text-primary)]/10 flex-1"></div>
+            </div>
+
+            <div class="flex gap-4">
+              <button type="button" (click)="loginWithGoogle()" class="flex-1 py-3 rounded-xl border border-[var(--text-primary)]/10 hover:border-[var(--text-primary)]/30 hover:bg-[var(--bg-secondary)] transition-all flex justify-center items-center gap-2">
+                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5">
+                <span class="text-xs font-bold tracking-wider">Google</span>
+              </button>
+              <button type="button" (click)="loginWithGithub()" class="flex-1 py-3 rounded-xl border border-[var(--text-primary)]/10 hover:border-[var(--text-primary)]/30 hover:bg-[var(--bg-secondary)] transition-all flex justify-center items-center gap-2">
+                <img src="https://www.svgrepo.com/show/512317/github-142.svg" alt="GitHub" class="w-5 h-5 invert">
+                <span class="text-xs font-bold tracking-wider">GitHub</span>
+              </button>
+            </div>
+
             @if (error()) {
               <p class="text-red-400 text-sm mt-2 text-center font-light">{{ error() }}</p>
             }
@@ -93,12 +107,12 @@ import gsap from 'gsap';
                           <h4 class="text-[var(--accent-main)] text-sm font-bold uppercase tracking-widest mb-4">Hero Configuration</h4>
                           <div class="space-y-4">
                              <div>
-                               <label class="block text-xs text-[var(--text-muted)] mb-2">Primary Title</label>
-                               <input type="text" [(ngModel)]="pageData().heroTitle" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-2xl font-display focus:border-[var(--accent-main)] outline-none" />
+                               <label for="hero-title" class="block text-xs text-[var(--text-muted)] mb-2">Primary Title</label>
+                               <input id="hero-title" type="text" [(ngModel)]="pageData().heroTitle" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-2xl font-display focus:border-[var(--accent-main)] outline-none" />
                              </div>
                              <div>
-                               <label class="block text-xs text-[var(--text-muted)] mb-2">Subtitle Tagline</label>
-                               <input type="text" [(ngModel)]="pageData().heroSubtitle" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-sm focus:border-[var(--accent-main)] outline-none" />
+                               <label for="hero-subtitle" class="block text-xs text-[var(--text-muted)] mb-2">Subtitle Tagline</label>
+                               <input id="hero-subtitle" type="text" [(ngModel)]="pageData().heroSubtitle" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-sm focus:border-[var(--accent-main)] outline-none" />
                              </div>
                           </div>
                        </div>
@@ -119,16 +133,16 @@ import gsap from 'gsap';
                                 
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                   <div>
-                                     <label class="block text-xs text-[var(--text-muted)] mb-2">Service Header ({{ $index + 1 }})</label>
-                                     <input type="text" [(ngModel)]="svc.title" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-xl font-display focus:border-[var(--accent-main)] outline-none" />
+                                     <label [for]="'svc-title-' + $index" class="block text-xs text-[var(--text-muted)] mb-2">Service Header ({{ $index + 1 }})</label>
+                                     <input [id]="'svc-title-' + $index" type="text" [(ngModel)]="svc.title" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-xl font-display focus:border-[var(--accent-main)] outline-none" />
                                   </div>
                                   <div>
-                                    <label class="block text-xs text-[var(--text-muted)] mb-2">Category Badge</label>
-                                    <input type="text" [(ngModel)]="svc.category" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-sm focus:border-[var(--accent-main)] outline-none uppercase font-mono tracking-widest text-[var(--accent-main)]" />
+                                    <label [for]="'svc-category-' + $index" class="block text-xs text-[var(--text-muted)] mb-2">Category Badge</label>
+                                    <input [id]="'svc-category-' + $index" type="text" [(ngModel)]="svc.category" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-sm focus:border-[var(--accent-main)] outline-none uppercase font-mono tracking-widest text-[var(--accent-main)]" />
                                   </div>
                                   <div class="md:col-span-2">
-                                     <label class="block text-xs text-[var(--text-muted)] mb-2">Detailed Description</label>
-                                     <textarea [(ngModel)]="svc.description" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-sm focus:border-[var(--accent-main)] outline-none min-h-[80px] resize-none"></textarea>
+                                     <label [for]="'svc-desc-' + $index" class="block text-xs text-[var(--text-muted)] mb-2">Detailed Description</label>
+                                     <textarea [id]="'svc-desc-' + $index" [(ngModel)]="svc.description" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-sm focus:border-[var(--accent-main)] outline-none min-h-[80px] resize-none"></textarea>
                                   </div>
                                 </div>
                               </div>
@@ -145,12 +159,12 @@ import gsap from 'gsap';
                           <h4 class="text-[var(--accent-main)] text-sm font-bold uppercase tracking-widest mb-4">Core Philosophy Header</h4>
                           <div class="space-y-4">
                              <div>
-                               <label class="block text-xs text-[var(--text-muted)] mb-2">Title</label>
-                               <input type="text" [(ngModel)]="pageData().title" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-2xl font-display focus:border-[var(--accent-main)] outline-none" />
+                               <label for="about-title" class="block text-xs text-[var(--text-muted)] mb-2">Title</label>
+                               <input id="about-title" type="text" [(ngModel)]="pageData().title" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-2xl font-display focus:border-[var(--accent-main)] outline-none" />
                              </div>
                              <div>
-                               <label class="block text-xs text-[var(--text-muted)] mb-2">Brand Identity Paragraph</label>
-                               <textarea [(ngModel)]="pageData().content" class="w-full bg-transparent border border-[var(--text-primary)]/20 rounded-lg p-4 py-2 text-sm focus:border-[var(--accent-main)] outline-none min-h-[300px] resize-none"></textarea>
+                               <label for="about-content" class="block text-xs text-[var(--text-muted)] mb-2">Brand Identity Paragraph</label>
+                               <textarea id="about-content" [(ngModel)]="pageData().content" class="w-full bg-transparent border border-[var(--text-primary)]/20 rounded-lg p-4 py-2 text-sm focus:border-[var(--accent-main)] outline-none min-h-[300px] resize-none"></textarea>
                              </div>
                           </div>
                        </div>
@@ -231,14 +245,14 @@ import gsap from 'gsap';
 })
 export class AdminComponent {
   email = signal('');
-  otp = signal('');
-  otpSent = signal(false);
+  password = signal('');
   loading = signal(false);
   saving = signal(false);
   saveSuccess = signal(false);
   error = signal('');
   
   selectedSection = signal('home');
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pageData = signal<any>({});
 
   public store = inject(StoreService);
@@ -249,13 +263,14 @@ export class AdminComponent {
   constructor() {
     afterNextRender(() => {
       this.supabase.checkSession();
+      this.loadOAuthError();
       if (this.supabase.isAdmin()) {
         this.loadSection(this.selectedSection());
         this.animateDashboard();
       }
 
       const buttons = document.querySelectorAll('.tesla-btn');
-      buttons.forEach((btn: any) => {
+      buttons.forEach((btn: Element) => {
         btn.addEventListener('mouseenter', () => gsap.to(btn, { scale: 1.05, duration: 0.3, ease: 'power2.out', boxShadow: '0 0 30px rgba(108,140,255,0.4)' }));
         btn.addEventListener('mouseleave', () => gsap.to(btn, { scale: 1, duration: 0.3, ease: 'power2.out', boxShadow: 'none' }));
       });
@@ -268,42 +283,59 @@ export class AdminComponent {
     });
   }
 
-  async requestOtpCall() {
-    if (!this.email()) return;
+  async loginWithEmail() {
+    if (!this.email() || !this.password()) return;
     this.loading.set(true);
     this.error.set('');
     
-    const success = await this.supabase.requestOtp(this.email());
-    if (success) {
-      this.otpSent.set(true);
+    const { error } = await this.supabase.loginWithEmail(this.email(), this.password());
+    if (!error) {
+      setTimeout(() => this.animateDashboard(), 100);
     } else {
-      this.error.set('Access Denied: Email not registered or Supabase auth failed.');
+      this.error.set((error as Error).message || 'Access Denied: Invalid credentials.');
     }
     this.loading.set(false);
   }
 
-  async verifyOtpCall() {
-    if (!this.otp() || this.otp().length !== 6) {
-       this.error.set('Please enter a valid 6-digit code.');
-       return;
-    }
+  async loginWithGoogle() {
     this.loading.set(true);
     this.error.set('');
-
-    const success = await this.supabase.verifyOtp(this.email(), this.otp());
-    if (success) {
-      setTimeout(() => this.animateDashboard(), 100);
-    } else {
-      this.error.set('Invalid or expired OTP code.');
+    const { error } = await this.supabase.loginWithGoogle();
+    if (error) {
+      this.error.set((error as Error).message || 'Google sign-in failed. Verify OAuth redirect URL in Supabase.');
+      this.loading.set(false);
     }
-    this.loading.set(false);
+  }
+
+  async loginWithGithub() {
+    this.loading.set(true);
+    this.error.set('');
+    const { error } = await this.supabase.loginWithGithub();
+    if (error) {
+      this.error.set((error as Error).message || 'GitHub sign-in failed. Verify OAuth redirect URL in Supabase.');
+      this.loading.set(false);
+    }
   }
 
   logout() {
     this.supabase.logout();
     this.email.set('');
-    this.otp.set('');
-    this.otpSent.set(false);
+    this.password.set('');
+  }
+
+  private async loadOAuthError() {
+    const callbackError = this.supabase.consumeAuthError();
+    if (callbackError) {
+      this.error.set(callbackError);
+      this.loading.set(false);
+      return;
+    }
+
+    const oauthError = await this.supabase.getOAuthErrorFromUrl();
+    if (oauthError) {
+      this.error.set(oauthError);
+      this.loading.set(false);
+    }
   }
 
   async loadSection(section: string) {
@@ -355,11 +387,13 @@ export class AdminComponent {
          this.saveSuccess.set(true);
          setTimeout(() => this.saveSuccess.set(false), 2000);
       } else {
-         alert('Failed to save to Supabase. Check network or keys.');
+         this.error.set('Failed to save to Supabase. Check network or keys.');
+         setTimeout(() => this.error.set(''), 4000);
       }
     } catch (e) {
       console.error(e);
-      alert('Network instability detected.');
+      this.error.set('Network instability detected.');
+      setTimeout(() => this.error.set(''), 4000);
     }
     this.saving.set(false);
   }

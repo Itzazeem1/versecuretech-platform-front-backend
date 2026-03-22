@@ -13,7 +13,42 @@ import gsap from 'gsap';
         <div #bar class="loader-bar"></div>
       </div>
     </div>
-  `
+  `,
+  styles: [`
+    .loader-container {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      background-color: var(--bg-main);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+    }
+    .loader-logo {
+      font-family: var(--font-display);
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      opacity: 0;
+      transform: translateY(20px);
+      margin-bottom: 2rem;
+    }
+    .loader-progress {
+      width: 200px;
+      height: 2px;
+      background-color: rgba(255, 255, 255, 0.1);
+      opacity: 0;
+      overflow: hidden;
+    }
+    .loader-bar {
+      width: 0%;
+      height: 100%;
+      background-color: var(--accent-main);
+    }
+  `]
 })
 export class LoaderComponent implements OnDestroy {
   loaderContainer = viewChild<ElementRef>('loaderContainer');

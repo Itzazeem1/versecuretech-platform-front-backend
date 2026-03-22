@@ -1,6 +1,7 @@
-import { Component, signal, afterNextRender, OnDestroy } from '@angular/core';
+import { Component, inject, signal, afterNextRender, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { SupabaseService } from '../services/supabase.service';
 
 @Component({
   selector: 'app-header',
@@ -71,6 +72,19 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
           <a routerLink="/about" routerLinkActive="text-[var(--text-primary)]" class="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--accent-main)] transition-colors">About</a>
           <a routerLink="/work" routerLinkActive="text-[var(--text-primary)]" class="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--accent-main)] transition-colors">Work</a>
           
+          @if (supabase.isAdmin()) {
+            <a routerLink="/admin" class="text-xs font-mono tracking-widest uppercase text-green-400 hover:text-green-300 transition-colors">
+              Admin Active
+            </a>
+            <button type="button" (click)="logout()" class="px-5 py-2 text-xs tracking-widest uppercase font-bold text-[var(--text-primary)] border border-[var(--text-primary)]/20 rounded-full hover:border-[var(--accent-main)] hover:text-[var(--accent-main)] transition-all">
+              Logout
+            </button>
+          } @else {
+            <a routerLink="/admin" class="text-xs font-mono tracking-widest uppercase text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors">
+              Admin Login
+            </a>
+          }
+
           <a routerLink="/contact" class="inline-flex items-center justify-center px-8 py-3 text-xs tracking-widest uppercase font-bold text-[var(--bg-main)] bg-[var(--text-primary)] rounded-full hover:scale-105 hover:bg-[var(--text-primary)] hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all">
              Initialize
           </a>
@@ -91,7 +105,11 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
             <a routerLink="/services" class="text-4xl font-display font-medium text-[var(--text-primary)]" (click)="toggleMenu()">Services</a>
             <a routerLink="/about" class="text-4xl font-display font-medium text-[var(--text-primary)]" (click)="toggleMenu()">About</a>
             <a routerLink="/work" class="text-4xl font-display font-medium text-[var(--text-primary)]" (click)="toggleMenu()">Work</a>
+            <a routerLink="/admin" class="text-4xl font-display font-medium text-[var(--text-primary)]" (click)="toggleMenu()">Admin</a>
             <a routerLink="/contact" class="text-4xl font-display font-medium text-[var(--accent-main)] mt-4" (click)="toggleMenu()">Initialize Contact</a>
+            @if (supabase.isAdmin()) {
+              <button type="button" (click)="logout()" class="text-left text-lg font-mono tracking-widest uppercase text-red-300 mt-2">Logout</button>
+            }
           </div>
         </div>
       }
@@ -103,6 +121,7 @@ export class HeaderComponent implements OnDestroy {
   scrolled = signal(false);
   menuOpen = signal(false);
   dropdownOpen = signal(false);
+  supabase = inject(SupabaseService);
   
   private scrollListener?: () => void;
 
@@ -118,6 +137,11 @@ export class HeaderComponent implements OnDestroy {
   
   toggleMenu() {
     this.menuOpen.update(v => !v);
+  }
+
+  async logout() {
+    await this.supabase.logout();
+    this.menuOpen.set(false);
   }
 
   ngOnDestroy() {

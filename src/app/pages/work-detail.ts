@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink, ParamMap } from '@angular/router';
 import { HeaderComponent } from '../components/header';
 import { FooterComponent } from '../components/footer';
-import { StoreService } from '../services/store.service';
 import gsap from 'gsap';
 
 interface WorkData {
@@ -139,7 +138,7 @@ export class WorkDetailComponent implements OnInit, OnDestroy {
         });
 
         const buttons = document.querySelectorAll('.tesla-btn');
-        buttons.forEach((btn: any) => {
+        buttons.forEach((btn: Element) => {
           btn.addEventListener('mouseenter', () => {
             gsap.to(btn, { scale: 1.05, duration: 0.3, ease: 'power2.out', boxShadow: '0 0 30px rgba(108,140,255,0.4)' });
           });
