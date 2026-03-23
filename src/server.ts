@@ -7,7 +7,9 @@ import {
 import express from 'express';
 import {join} from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
 import nodemailer from 'nodemailer';
+import { GoogleGenAI, Type } from '@google/genai';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -18,33 +20,58 @@ const angularApp = new AngularNodeAppEngine();
 // --- Backend API ---
 const allowedEmails = ['azeem.makhdum6@gmail.com', 'abbas585@gmail.com'];
 // Simple file-based DB
-const DB_FILE = join(import.meta.dirname, 'data.json');
+const DB_FILE = join(os.tmpdir(), 'data.json');
 function readDB() {
-  if (!fs.existsSync(DB_FILE)) {
-    fs.writeFileSync(DB_FILE, JSON.stringify({ services: [], contacts: [] }));
+  try {
+    if (!fs.existsSync(DB_FILE)) {
+      fs.writeFileSync(DB_FILE, JSON.stringify({ services: [], contacts: [], forgeUsers: {} }));
+    }
+    const data = JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
+    if (!data.forgeUsers) data.forgeUsers = {};
+    return data;
+  } catch (e) {
+    console.error('Failed to read DB', e);
+    return { services: [], contacts: [], forgeUsers: {} };
   }
-  return JSON.parse(fs.readFileSync(DB_FILE, 'utf-8'));
 }
 function writeDB(data: unknown) {
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  try {
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2));
+  } catch (e) {
+    console.error('Failed to write DB', e);
+  }
 }
 
-// Nodemailer setup (mock/ethereal)
+// Nodemailer setup
 let transporter: nodemailer.Transporter;
-nodemailer.createTestAccount().then(account => {
+
+if (process.env['SMTP_HOST'] && process.env['SMTP_USER'] && process.env['SMTP_PASS']) {
   transporter = nodemailer.createTransport({
-    host: account.smtp.host,
-    port: account.smtp.port,
-    secure: account.smtp.secure,
+    host: process.env['SMTP_HOST'],
+    port: parseInt(process.env['SMTP_PORT'] || '587', 10),
+    secure: process.env['SMTP_SECURE'] === 'true',
     auth: {
-      user: account.user,
-      pass: account.pass,
+      user: process.env['SMTP_USER'],
+      pass: process.env['SMTP_PASS'],
     },
   });
-  console.log('Ethereal Email account created. Check console for message URLs.');
-}).catch(err => {
-  console.error('Failed to create Ethereal account', err);
-});
+  console.log('Real SMTP Email account configured.');
+} else {
+  nodemailer.createTestAccount().then(account => {
+    transporter = nodemailer.createTransport({
+      host: account.smtp.host,
+      port: account.smtp.port,
+      secure: account.smtp.secure,
+      auth: {
+        user: account.user,
+        pass: account.pass,
+      },
+    });
+    console.log('Ethereal Email account created. Check console for message URLs. (Set SMTP_HOST, SMTP_USER, SMTP_PASS for real emails)');
+  }).catch(err => {
+    console.error('Failed to create Ethereal account', err);
+  });
+}
 
 app.post('/api/auth/login', (req, res) => {
   const { email } = req.body;
@@ -91,19 +118,234 @@ app.post('/api/contact', async (req, res) => {
 
   try {
     if (transporter) {
-      const info = await transporter.sendMail({
-        from: '"Contact Form" <noreply@versecuretech.com>',
-        to: 'hello@versecuretech.com', // Admin email
-        subject: `New Contact from ${firstName} ${lastName}`,
-        text: `Name: ${firstName} ${lastName}\nEmail: ${email}\nService: ${service}\nMessage: ${message}`
+      // 1. Send email to Admins
+      const adminInfo = await transporter.sendMail({
+        from: '"Versecure Contact" <noreply@versecuretech.com>',
+        to: 'azeem.makhdum6@gmail.com, abbas585@gmail.com',
+        subject: `New Lead: ${firstName} ${lastName} - ${service}`,
+        html: `
+          <h2>New Contact Form Submission</h2>
+          <p><strong>Name:</strong> ${firstName} ${lastName}</p>
+          <p><strong>Email:</strong> ${email}</p>
+          <p><strong>Service Requested:</strong> ${service}</p>
+          <p><strong>Message:</strong></p>
+          <blockquote style="border-left: 4px solid #ccc; padding-left: 10px;">${message}</blockquote>
+        `
       });
-      console.log('Contact Email sent: %s', nodemailer.getTestMessageUrl(info));
+
+      // 2. Send decorative confirmation email to the User
+      const userInfo = await transporter.sendMail({
+        from: '"Versecure Tech" <hello@versecuretech.com>',
+        to: email,
+        subject: `We received your request, ${firstName}`,
+        html: `
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #333;">
+            <div style="padding: 40px; text-align: center; background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%); border-bottom: 1px solid #333;">
+              <h1 style="margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px; color: #fff;">Versecure<span style="color: #3b82f6;">.</span></h1>
+            </div>
+            <div style="padding: 40px;">
+              <h2 style="font-size: 22px; font-weight: 500; margin-top: 0; color: #f3f4f6;">Hello ${firstName},</h2>
+              <p style="font-size: 16px; line-height: 1.6; color: #9ca3af; margin-bottom: 24px;">
+                Thank you for reaching out to Versecure. We have received your inquiry regarding <strong>${service}</strong>.
+              </p>
+              <p style="font-size: 16px; line-height: 1.6; color: #9ca3af; margin-bottom: 32px;">
+                Our engineering team is reviewing your request and will get back to you shortly to discuss how we can bridge your vision and execution.
+              </p>
+              <div style="background-color: #111; padding: 24px; border-radius: 12px; border: 1px solid #222; margin-bottom: 32px;">
+                <h3 style="margin-top: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; margin-bottom: 12px;">Your Message Summary</h3>
+                <p style="margin: 0; font-size: 15px; color: #d1d5db; font-style: italic;">"${message}"</p>
+              </div>
+              <p style="font-size: 16px; line-height: 1.6; color: #9ca3af; margin: 0;">
+                Best regards,<br>
+                <strong style="color: #fff;">The Versecure Team</strong>
+              </p>
+            </div>
+            <div style="padding: 24px 40px; background-color: #050505; text-align: center; border-top: 1px solid #222;">
+              <p style="margin: 0; font-size: 12px; color: #6b7280;">
+                &copy; ${new Date().getFullYear()} Versecure Tech. All rights reserved.
+              </p>
+            </div>
+          </div>
+        `
+      });
+
+      if (!process.env['SMTP_HOST']) {
+        console.log('Admin Email sent: %s', nodemailer.getTestMessageUrl(adminInfo));
+        console.log('User Confirmation Email sent: %s', nodemailer.getTestMessageUrl(userInfo));
+      }
     }
   } catch (e) {
     console.error('Contact email send failed', e);
   }
 
   res.json({ success: true });
+});
+
+// Secure Forge AI Endpoints
+app.get('/api/forge/credits', (req, res) => {
+  const sessionId = req.query['sessionId'] as string;
+  if (!sessionId) {
+    res.status(400).json({ error: 'Session ID required' });
+    return;
+  }
+  const db = readDB();
+  if (!db.forgeUsers[sessionId]) {
+    db.forgeUsers[sessionId] = { credits: 100 };
+    writeDB(db);
+  }
+  res.json({ credits: db.forgeUsers[sessionId].credits });
+});
+
+app.post('/api/forge/generate', async (req, res) => {
+  const { sessionId, prompt, apiKey } = req.body;
+  if (!sessionId || !prompt) {
+    res.status(400).json({ error: 'Session ID and prompt required' });
+    return;
+  }
+
+  const db = readDB();
+  if (!db.forgeUsers[sessionId]) {
+    db.forgeUsers[sessionId] = { credits: 100 };
+  }
+
+  const userCredits = db.forgeUsers[sessionId].credits;
+  if (userCredits < 2) {
+    res.status(403).json({ error: 'Insufficient credits. You need at least 2 credits.' });
+    return;
+  }
+
+  const customKey = apiKey;
+  const envKey = process.env['GEMINI_API_KEY'];
+  const globalKey = typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : undefined;
+  
+  const finalApiKey = customKey || envKey || globalKey;
+  
+  if (!finalApiKey || finalApiKey === 'YOUR_GEMINI_API_KEY' || finalApiKey === '${GEMINI_API_KEY}') {
+    console.error('API Key Resolution Failed:', { hasCustom: !!customKey, hasEnv: !!envKey, hasGlobal: !!globalKey, globalVal: globalKey });
+    res.status(500).json({ error: 'Server missing Gemini API key. Please check your environment variables.' });
+    return;
+  }
+  
+  // Don't log the actual key, just where it came from
+  console.log('Using API Key from:', customKey ? 'custom' : (envKey ? 'env' : 'global'));
+
+  const ai = new GoogleGenAI({ apiKey: finalApiKey });
+  
+  const systemInstruction = `You are Forge AI, an advanced AI assistant and expert frontend developer.
+Your behavior depends on the user's prompt:
+1. If the user is just chatting, asking questions, or giving normal commands (e.g., "hello", "how are you", "explain this"), respond verbally in a helpful and conversational manner. DO NOT generate code files.
+2. If the user explicitly asks you to build, create, or generate a web application, component, or UI (e.g., "build a calculator", "create a landing page"), you MUST generate a complete project.
+
+WHEN GENERATING CODE:
+- Generate a realistic project structure matching modern web development.
+- For HTML files, include Tailwind CSS via CDN: <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+- Ensure the design is modern, responsive, and accessible.
+- Use high-quality UI patterns and animations where appropriate.
+
+OUTPUT FORMAT:
+- If responding verbally, output a JSON object with a single "message" property containing your response string.
+- If generating code, output a JSON object with a "files" property containing an array of file objects, and an optional "message" property explaining what you built.`;
+
+  const config = {
+    systemInstruction,
+    temperature: 0.7,
+    responseMimeType: "application/json",
+    responseSchema: {
+      type: Type.OBJECT,
+      properties: {
+        message: { type: Type.STRING },
+        files: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            properties: {
+              path: { type: Type.STRING },
+              content: { type: Type.STRING }
+            },
+            required: ["path", "content"]
+          }
+        }
+      }
+    }
+  };
+
+  // First test if the API key works at all
+  try {
+    console.log('Testing API key with countTokens...');
+    const tokenCount = await ai.models.countTokens({
+      model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+      contents: 'Hello world test'
+    });
+    console.log('API key works! Token count:', tokenCount.totalTokens);
+  } catch (testError) {
+    console.error('API key test failed:', testError);
+    res.status(500).json({ error: 'API key validation failed: ' + (testError as Error).message });
+    return;
+  }
+
+  try {
+    let responseText = '';
+    let usedModel = '';
+    let cost = 0;
+
+    if (userCredits >= 10) {
+      try {
+        console.log('Attempting to use model: gemini-2.5-flash-native-audio-preview-12-2025');
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+          contents: prompt,
+          config
+        });
+        responseText = response.text || '';
+        usedModel = 'Pro';
+        cost = 10;
+      } catch (proError) {
+        console.warn('Pro model failed, falling back to Flash...', proError);
+        console.log('Attempting to use fallback model: gemini-2.5-flash-native-audio-preview-12-2025');
+        const response = await ai.models.generateContent({
+          model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+          contents: prompt,
+          config
+        });
+        responseText = response.text || '';
+        usedModel = 'Flash';
+        cost = 2;
+      }
+    } else {
+      console.log('Using default model: gemini-2.5-flash-native-audio-preview-12-2025');
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+        contents: prompt,
+        config
+      });
+      responseText = response.text || '';
+      usedModel = 'Flash';
+      cost = 2;
+    }
+
+    // Deduct credits
+    db.forgeUsers[sessionId].credits -= cost;
+    writeDB(db);
+
+    res.json({
+      success: true,
+      text: responseText,
+      usedModel,
+      cost,
+      remainingCredits: db.forgeUsers[sessionId].credits
+    });
+
+  } catch (error: unknown) {
+    console.error('Gemini API Error:', error);
+    const errorMessage = (error as Error).message || 'Failed to generate content';
+    
+    if (errorMessage.includes('API key not valid')) {
+      const source = customKey ? 'custom API key' : 'server API key';
+      res.status(500).json({ error: `The ${source} is not valid. Please check your settings and try again.` });
+    } else {
+      res.status(500).json({ error: errorMessage });
+    }
+  }
 });
 // --- End Backend API ---
 
@@ -137,8 +379,9 @@ app.use((req, res, next) => {
 import { Server } from 'socket.io';
 
 if (isMainModule(import.meta.url) || process.env['pm_id']) {
-  const port = process.env['PORT'] || 4000;
+  const port = process.env['PORT'] || 4003;
   const server = app.listen(port, () => {
+    console.log('Starting server with build timestamp:', new Date().toISOString());
     console.log(`Node Express server listening on http://localhost:${port}`);
   });
 

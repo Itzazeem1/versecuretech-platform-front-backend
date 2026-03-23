@@ -28,41 +28,52 @@ import gsap from 'gsap';
             <p class="text-[var(--text-muted)] text-sm">Secure admin gateway</p>
           </div>
 
-          <form (ngSubmit)="loginWithEmail()" class="relative z-10 flex flex-col gap-6">
-            <div>
-              <label for="admin-email" class="block text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-2">Admin Email</label>
-              <input id="admin-email" type="email" [ngModel]="email()" (ngModelChange)="email.set($event)" name="email" required class="w-full bg-[var(--bg-secondary)] border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)] transition-colors" placeholder="Admin email">
-            </div>
-            <div>
-              <label for="admin-password" class="block text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-2">Password</label>
-              <input id="admin-password" type="password" [ngModel]="password()" (ngModelChange)="password.set($event)" name="password" required class="w-full bg-[var(--bg-secondary)] border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)] transition-colors" placeholder="••••••••">
-            </div>
-            
-            <button type="submit" [disabled]="loading()" class="tesla-btn w-full py-4 rounded-full bg-[var(--text-primary)] text-[var(--bg-main)] font-bold tracking-widest uppercase text-xs hover:bg-[var(--accent-main)] transition-colors disabled:opacity-50 flex justify-center items-center gap-2">
-              {{ loading() ? 'Authenticating...' : 'Sign In with Email' }}
-            </button>
-            
-            <div class="flex items-center gap-4 my-2">
-              <div class="h-px bg-[var(--text-primary)]/10 flex-1"></div>
-              <span class="text-xs text-[var(--text-muted)] uppercase tracking-widest">OR</span>
-              <div class="h-px bg-[var(--text-primary)]/10 flex-1"></div>
-            </div>
-
-            <div class="flex gap-4">
-              <button type="button" (click)="loginWithGoogle()" class="flex-1 py-3 rounded-xl border border-[var(--text-primary)]/10 hover:border-[var(--text-primary)]/30 hover:bg-[var(--bg-secondary)] transition-all flex justify-center items-center gap-2">
-                <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5">
-                <span class="text-xs font-bold tracking-wider">Google</span>
-              </button>
-              <button type="button" (click)="loginWithGithub()" class="flex-1 py-3 rounded-xl border border-[var(--text-primary)]/10 hover:border-[var(--text-primary)]/30 hover:bg-[var(--bg-secondary)] transition-all flex justify-center items-center gap-2">
-                <img src="https://www.svgrepo.com/show/512317/github-142.svg" alt="GitHub" class="w-5 h-5 invert">
-                <span class="text-xs font-bold tracking-wider">GitHub</span>
+          @if (supabase.isLoggedIn() && !supabase.isAdmin()) {
+            <div class="text-center py-8 relative z-10">
+              <span class="material-icons text-5xl text-red-500 mb-4">gavel</span>
+              <h2 class="text-xl font-bold mb-2">Access Denied</h2>
+              <p class="text-sm text-[var(--text-muted)] mb-6">Your account does not have administrator privileges.</p>
+              <button (click)="logout()" class="w-full py-3 rounded-xl border border-[var(--text-primary)]/20 hover:bg-[var(--text-primary)]/10 transition-colors text-xs font-bold uppercase tracking-widest">
+                Sign Out
               </button>
             </div>
+          } @else {
+            <form (ngSubmit)="loginWithEmail()" class="relative z-10 flex flex-col gap-6">
+              <div>
+                <label for="admin-email" class="block text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-2">Admin Email</label>
+                <input id="admin-email" type="email" [ngModel]="email()" (ngModelChange)="email.set($event)" name="email" required class="w-full bg-[var(--bg-secondary)] border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)] transition-colors" placeholder="Admin email">
+              </div>
+              <div>
+                <label for="admin-password" class="block text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-2">Password</label>
+                <input id="admin-password" type="password" [ngModel]="password()" (ngModelChange)="password.set($event)" name="password" required class="w-full bg-[var(--bg-secondary)] border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)] transition-colors" placeholder="••••••••">
+              </div>
+              
+              <button type="submit" [disabled]="loading()" class="w-full py-4 rounded-full bg-[var(--text-primary)] text-[var(--bg-main)] font-bold tracking-widest uppercase text-xs hover:bg-[var(--accent-main)] transition-colors disabled:opacity-50 flex justify-center items-center gap-2">
+                {{ loading() ? 'Authenticating...' : 'Sign In with Email' }}
+              </button>
+              
+              <div class="flex items-center gap-4 my-2">
+                <div class="h-px bg-[var(--text-primary)]/10 flex-1"></div>
+                <span class="text-xs text-[var(--text-muted)] uppercase tracking-widest">OR</span>
+                <div class="h-px bg-[var(--text-primary)]/10 flex-1"></div>
+              </div>
 
-            @if (error()) {
-              <p class="text-red-400 text-sm mt-2 text-center font-light">{{ error() }}</p>
-            }
-          </form>
+              <div class="flex gap-4">
+                <button type="button" (click)="loginWithGoogle()" class="flex-1 py-3 rounded-xl border border-[var(--text-primary)]/10 hover:border-[var(--text-primary)]/30 hover:bg-[var(--bg-secondary)] transition-all flex justify-center items-center gap-2">
+                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5">
+                  <span class="text-xs font-bold tracking-wider">Google</span>
+                </button>
+                <button type="button" (click)="loginWithGithub()" class="flex-1 py-3 rounded-xl border border-[var(--text-primary)]/10 hover:border-[var(--text-primary)]/30 hover:bg-[var(--bg-secondary)] transition-all flex justify-center items-center gap-2">
+                  <img src="https://www.svgrepo.com/show/512317/github-142.svg" alt="GitHub" class="w-5 h-5 invert">
+                  <span class="text-xs font-bold tracking-wider">GitHub</span>
+                </button>
+              </div>
+
+              @if (error()) {
+                <p class="text-red-400 text-sm mt-2 text-center font-light">{{ error() }}</p>
+              }
+            </form>
+          }
         </div>
       } @else {
         <!-- Dashboard -->
@@ -117,6 +128,36 @@ import gsap from 'gsap';
                           </div>
                        </div>
 
+                       <!-- Philosophy Group -->
+                       <div class="bg-[var(--bg-main)]/50 p-6 rounded-2xl border border-[var(--text-primary)]/5">
+                          <h4 class="text-[var(--accent-main)] text-sm font-bold uppercase tracking-widest mb-4">Philosophy Section</h4>
+                          <div class="space-y-4">
+                             <div>
+                               <label for="philosophy-title" class="block text-xs text-[var(--text-muted)] mb-2">Philosophy Title</label>
+                               <input id="philosophy-title" type="text" [(ngModel)]="pageData().philosophyTitle" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-xl font-display focus:border-[var(--accent-main)] outline-none" />
+                             </div>
+                             <div>
+                               <label for="philosophy-body" class="block text-xs text-[var(--text-muted)] mb-2">Philosophy Body</label>
+                               <textarea id="philosophy-body" [(ngModel)]="pageData().philosophyBody" class="w-full bg-transparent border border-[var(--text-primary)]/20 rounded-lg p-4 py-2 text-sm focus:border-[var(--accent-main)] outline-none min-h-[120px] resize-none"></textarea>
+                             </div>
+                          </div>
+                       </div>
+
+                       <!-- Services Header Group -->
+                       <div class="bg-[var(--bg-main)]/50 p-6 rounded-2xl border border-[var(--text-primary)]/5">
+                          <h4 class="text-[var(--accent-main)] text-sm font-bold uppercase tracking-widest mb-4">Services Header</h4>
+                          <div class="space-y-4">
+                             <div>
+                               <label for="services-title" class="block text-xs text-[var(--text-muted)] mb-2">Services Title</label>
+                               <input id="services-title" type="text" [(ngModel)]="pageData().servicesTitle" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-xl font-display focus:border-[var(--accent-main)] outline-none" />
+                             </div>
+                             <div>
+                               <label for="services-subtitle" class="block text-xs text-[var(--text-muted)] mb-2">Services Subtitle</label>
+                               <input id="services-subtitle" type="text" [(ngModel)]="pageData().servicesSubtitle" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-sm focus:border-[var(--accent-main)] outline-none" />
+                             </div>
+                          </div>
+                       </div>
+
                        <!-- Dynamic Services Grid Array -->
                        <div class="bg-[var(--bg-main)]/50 p-6 rounded-2xl border border-[var(--text-primary)]/5">
                           <div class="flex justify-between items-center mb-6">
@@ -155,6 +196,20 @@ import gsap from 'gsap';
                   } @else if (selectedSection() === 'about') {
                     <!-- About Form Fields -->
                     <div class="space-y-8">
+                       <div class="bg-[var(--bg-main)]/50 p-6 rounded-2xl border border-[var(--text-primary)]/5">
+                          <h4 class="text-[var(--accent-main)] text-sm font-bold uppercase tracking-widest mb-4">Hero Configuration</h4>
+                          <div class="space-y-4">
+                             <div>
+                               <label for="about-hero-title" class="block text-xs text-[var(--text-muted)] mb-2">Hero Title</label>
+                               <input id="about-hero-title" type="text" [(ngModel)]="pageData().heroTitle" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-2xl font-display focus:border-[var(--accent-main)] outline-none" />
+                             </div>
+                             <div>
+                               <label for="about-hero-subtitle" class="block text-xs text-[var(--text-muted)] mb-2">Hero Subtitle</label>
+                               <input id="about-hero-subtitle" type="text" [(ngModel)]="pageData().heroSubtitle" class="w-full bg-transparent border-b border-[var(--text-primary)]/20 py-2 text-sm focus:border-[var(--accent-main)] outline-none" />
+                             </div>
+                          </div>
+                       </div>
+
                        <div class="bg-[var(--bg-main)]/50 p-6 rounded-2xl border border-[var(--text-primary)]/5">
                           <h4 class="text-[var(--accent-main)] text-sm font-bold uppercase tracking-widest mb-4">Core Philosophy Header</h4>
                           <div class="space-y-4">
@@ -234,6 +289,26 @@ import gsap from 'gsap';
                 <p class="text-[10px] text-[var(--text-primary)] relative z-10 opacity-70">Awwwards 3D Renders Online</p>
               </div>
 
+              <!-- Security Settings -->
+              <div class="glass-panel p-8 rounded-[2rem] border border-[var(--text-primary)]/10">
+                <div class="flex items-center gap-3 mb-6">
+                  <span class="material-icons text-[var(--accent-main)]">security</span>
+                  <h3 class="font-medium text-xl">Security Settings</h3>
+                </div>
+                <div class="space-y-4">
+                  <div>
+                    <label for="new-password" class="block text-xs text-[var(--text-muted)] mb-2">Update Password</label>
+                    <input id="new-password" type="password" [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)" class="w-full bg-transparent border border-[var(--text-primary)]/20 rounded-lg px-4 py-3 text-sm focus:border-[var(--accent-main)] outline-none" placeholder="Enter new password" />
+                  </div>
+                  <button (click)="updatePassword()" [disabled]="!newPassword() || updatingPassword()" class="w-full py-3 rounded-xl border border-[var(--text-primary)]/20 hover:bg-[var(--text-primary)]/10 transition-colors text-xs font-bold uppercase tracking-widest disabled:opacity-50">
+                    {{ updatingPassword() ? 'Updating...' : 'Save New Password' }}
+                  </button>
+                  @if (passwordMsg()) {
+                    <p class="text-xs text-center mt-2" [class.text-green-400]="passwordSuccess()" [class.text-red-400]="!passwordSuccess()">{{ passwordMsg() }}</p>
+                  }
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
@@ -251,6 +326,11 @@ export class AdminComponent {
   saveSuccess = signal(false);
   error = signal('');
   
+  newPassword = signal('');
+  updatingPassword = signal(false);
+  passwordMsg = signal('');
+  passwordSuccess = signal(false);
+
   selectedSection = signal('home');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   pageData = signal<any>({});
@@ -263,7 +343,6 @@ export class AdminComponent {
   constructor() {
     afterNextRender(() => {
       this.supabase.checkSession();
-      this.loadOAuthError();
       if (this.supabase.isAdmin()) {
         this.loadSection(this.selectedSection());
         this.animateDashboard();
@@ -298,44 +377,17 @@ export class AdminComponent {
   }
 
   async loginWithGoogle() {
-    this.loading.set(true);
-    this.error.set('');
-    const { error } = await this.supabase.loginWithGoogle();
-    if (error) {
-      this.error.set((error as Error).message || 'Google sign-in failed. Verify OAuth redirect URL in Supabase.');
-      this.loading.set(false);
-    }
+    await this.supabase.loginWithGoogle(window.location.origin + '/admin');
   }
 
   async loginWithGithub() {
-    this.loading.set(true);
-    this.error.set('');
-    const { error } = await this.supabase.loginWithGithub();
-    if (error) {
-      this.error.set((error as Error).message || 'GitHub sign-in failed. Verify OAuth redirect URL in Supabase.');
-      this.loading.set(false);
-    }
+    await this.supabase.loginWithGithub(window.location.origin + '/admin');
   }
 
   logout() {
     this.supabase.logout();
     this.email.set('');
     this.password.set('');
-  }
-
-  private async loadOAuthError() {
-    const callbackError = this.supabase.consumeAuthError();
-    if (callbackError) {
-      this.error.set(callbackError);
-      this.loading.set(false);
-      return;
-    }
-
-    const oauthError = await this.supabase.getOAuthErrorFromUrl();
-    if (oauthError) {
-      this.error.set(oauthError);
-      this.loading.set(false);
-    }
   }
 
   async loadSection(section: string) {
@@ -413,6 +465,26 @@ export class AdminComponent {
       this.store.toggleAnimations();
       await this.supabase.saveContent('settings_anim', { value: this.store.enableAnimations() });
     }
+  }
+
+  async updatePassword() {
+    if (!this.newPassword()) return;
+    this.updatingPassword.set(true);
+    this.passwordMsg.set('');
+    
+    const { error } = await this.supabase.updatePassword(this.newPassword());
+    
+    if (error) {
+      this.passwordSuccess.set(false);
+      this.passwordMsg.set('Failed to update password.');
+    } else {
+      this.passwordSuccess.set(true);
+      this.passwordMsg.set('Password updated successfully!');
+      this.newPassword.set('');
+    }
+    
+    this.updatingPassword.set(false);
+    setTimeout(() => this.passwordMsg.set(''), 4000);
   }
 
   private animateDashboard() {

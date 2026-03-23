@@ -1,8 +1,7 @@
 import { Component, ElementRef, ViewChild, inject, afterNextRender, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
-import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 import { StoreService } from '../services/store.service';
-import { PLATFORM_ID } from '@angular/core';
 
 @Component({
   selector: 'app-three-bg',
@@ -37,9 +36,6 @@ export class ThreeBackgroundComponent implements OnDestroy {
   private material!: THREE.ShaderMaterial;
   private animationFrameId: number | null = null;
   private clock = new THREE.Clock();
-  private platformId = inject(PLATFORM_ID);
-  private readonly handleResize = () => this.onWindowResize();
-  private readonly handleMouseMove = (event: MouseEvent) => this.onMouseMove(event);
 
   private mouseX = typeof window !== 'undefined' ? window.innerWidth / 2 : 0;
   private mouseY = typeof window !== 'undefined' ? window.innerHeight / 2 : 0;
@@ -48,7 +44,6 @@ export class ThreeBackgroundComponent implements OnDestroy {
 
   constructor() {
     afterNextRender(() => {
-      if (!isPlatformBrowser(this.platformId)) return;
       this.initImmersiveShader();
     });
   }
@@ -174,8 +169,8 @@ export class ThreeBackgroundComponent implements OnDestroy {
   }
 
   private setupEventListeners() {
-    window.addEventListener('resize', this.handleResize);
-    window.addEventListener('mousemove', this.handleMouseMove, { passive: true });
+    window.addEventListener('resize', this.onWindowResize.bind(this));
+    window.addEventListener('mousemove', this.onMouseMove.bind(this), { passive: true });
   }
 
   private onWindowResize() {
@@ -213,10 +208,8 @@ export class ThreeBackgroundComponent implements OnDestroy {
 
   ngOnDestroy() {
     if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-    if (isPlatformBrowser(this.platformId)) {
-      window.removeEventListener('resize', this.handleResize);
-      window.removeEventListener('mousemove', this.handleMouseMove);
-    }
+    window.removeEventListener('resize', this.onWindowResize.bind(this));
+    window.removeEventListener('mousemove', this.onMouseMove.bind(this));
     
     if (this.renderer) {
       this.renderer.dispose();

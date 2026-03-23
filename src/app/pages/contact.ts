@@ -85,6 +85,17 @@ import gsap from 'gsap';
                   </div>
                   
                   <div class="flex flex-col gap-2 relative">
+                     <label for="service" class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Service Required</label>
+                     <select id="service" name="service" required class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors appearance-none">
+                        <option value="" disabled selected class="text-gray-500">Select a service...</option>
+                        <option value="Web Architecture" class="bg-[#0a0a0a]">Web Architecture</option>
+                        <option value="System Integration" class="bg-[#0a0a0a]">System Integration</option>
+                        <option value="Security Audit" class="bg-[#0a0a0a]">Security Audit</option>
+                        <option value="Other" class="bg-[#0a0a0a]">Other</option>
+                     </select>
+                  </div>
+                  
+                  <div class="flex flex-col gap-2 relative">
                      <label for="message" class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Payload [Message]</label>
                      <textarea id="message" name="message" rows="4" required class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors resize-none"></textarea>
                   </div>
