@@ -30,6 +30,22 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/contact').then(m => m.ContactComponent)
   },
   {
+    path: 'login',
+    loadComponent: () => import('./pages/login').then(m => m.LoginComponent)
+  },
+  {
+    path: 'portal',
+    loadComponent: () => import('./pages/portal').then(m => m.PortalComponent)
+  },
+  {
+    path: 'forge',
+    loadComponent: () => import('./pages/forge').then(m => m.ForgeComponent)
+  },
+  {
+    path: 'pricing',
+    loadComponent: () => import('./pages/pricing').then(m => m.PricingComponent)
+  },
+  {
     path: 'admin',
     loadComponent: () => import('./pages/admin').then(m => m.AdminComponent)
   },
@@ -40,6 +56,10 @@ export const routes: Routes = [
   {
     path: 'terms-of-service',
     loadComponent: () => import('./pages/terms-of-service').then(m => m.TermsOfServiceComponent)
+  },
+  {
+    path: 'cookies-policy',
+    loadComponent: () => import('./pages/cookies-policy').then(m => m.CookiesPolicyComponent)
   },
   {
     path: '**',

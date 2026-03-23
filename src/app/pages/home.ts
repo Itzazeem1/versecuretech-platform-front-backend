@@ -52,9 +52,10 @@ import gsap from 'gsap';
 
             <div class="philosophy-image w-full md:w-6/12 relative">
               <div class="glass-panel rounded-[2rem] p-2 h-[500px] flex items-center justify-center glow-hover border border-[var(--text-primary)]/5 relative overflow-hidden">
+                <img src="https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=1000&auto=format&fit=crop" alt="Vision and Execution" class="absolute inset-0 w-full h-full object-cover rounded-[1.8rem] opacity-80 mix-blend-luminosity hover:mix-blend-normal transition-all duration-700" referrerpolicy="no-referrer" />
                 <div class="absolute inset-0 bg-gradient-to-br from-[var(--accent-main)]/20 via-transparent to-[var(--accent-main)]/10 opacity-70 hover:opacity-100 transition-opacity duration-1000 transform hover:scale-105 pointer-events-none"></div>
                 <div class="absolute inset-0 bg-gradient-to-tr from-[var(--bg-main)] via-transparent to-transparent opacity-80 pointer-events-none"></div>
-                <div class="absolute w-64 h-64 bg-[var(--accent-main)]/30 blur-[100px] rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"></div>
+                <div class="absolute w-64 h-64 bg-[var(--accent-main)]/30 blur-[100px] rounded-full top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
               </div>
             </div>
 

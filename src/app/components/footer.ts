@@ -36,16 +36,17 @@ import { RouterLink } from '@angular/router';
               <li><a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--text-primary)] transition-colors">LinkedIn</a></li>
               <li><a href="https://twitter.com" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--text-primary)] transition-colors">Twitter</a></li>
               <li><a href="https://github.com" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--text-primary)] transition-colors">GitHub</a></li>
-              <li><a routerLink="/admin" class="hover:text-[var(--accent-main)] transition-colors">Client Portal</a></li>
+              <li><a routerLink="/portal" class="hover:text-[var(--accent-main)] transition-colors">Client Portal</a></li>
             </ul>
           </div>
         </div>
         
         <div class="mt-20 pt-8 border-t border-[var(--text-primary)]/10 flex flex-col md:flex-row justify-between items-center text-sm text-[var(--text-muted)]">
           <p>&copy; {{ year }} VersecureTech. All rights reserved.</p>
-          <div class="flex gap-6 mt-4 md:mt-0">
+          <div class="flex flex-wrap gap-4 md:gap-6 mt-4 md:mt-0 justify-center">
             <a routerLink="/privacy-policy" class="hover:text-[var(--text-primary)] transition-colors">Privacy Policy</a>
             <a routerLink="/terms-of-service" class="hover:text-[var(--text-primary)] transition-colors">Terms of Service</a>
+            <a routerLink="/cookies-policy" class="hover:text-[var(--text-primary)] transition-colors">Cookies Policy</a>
           </div>
         </div>
       </div>

@@ -1,6 +1,5 @@
-import { Injectable, inject, PLATFORM_ID, signal } from '@angular/core';
-import { isPlatformBrowser } from '@angular/common';
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { Injectable, signal } from '@angular/core';
+import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 import { environment } from '../../environments/environment';
 
 export interface SiteContent {
@@ -20,11 +19,10 @@ export interface AdminUser {
 })
 export class SupabaseService {
   private supabase: SupabaseClient;
-  private readonly platformId = inject(PLATFORM_ID);
-  private authListenerInitialized = false;
   public isAdmin = signal<boolean>(false);
+  public isLoggedIn = signal<boolean>(false);
+  public currentUser = signal<User | null>(null);
   public isConnected = signal<boolean>(false);
-  public authError = signal<string>('');
 
   constructor() {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
@@ -43,119 +41,74 @@ export class SupabaseService {
     }
   }
 
+  private checkAdminStatus(user: User | null) {
+    if (!user) {
+      this.isAdmin.set(false);
+      this.isLoggedIn.set(false);
+      this.currentUser.set(null);
+      return;
+    }
+    this.isLoggedIn.set(true);
+    this.currentUser.set(user);
+    // Secure the admin panel to the specific admin emails
+    if (user.email === 'azeem.makhdum6@gmail.com' || user.email === 'abbas585@gmail.com') {
+      this.isAdmin.set(true);
+    } else {
+      this.isAdmin.set(false);
+    }
+  }
+
   // 1. Auth Flow - Secured via Supabase Auth
   async loginWithEmail(email: string, password: string): Promise<{error: unknown}> {
     const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
     if (!error && data.session) {
-      this.isAdmin.set(true);
+      this.checkAdminStatus(data.session.user);
     }
     return { error };
   }
 
-  async loginWithGoogle(): Promise<{ error: unknown }> {
-    const { error } = await this.supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: this.getAuthRedirectUrl(),
-      },
-    });
+  async signUpWithEmail(email: string, password: string): Promise<{error: unknown}> {
+    const { data, error } = await this.supabase.auth.signUp({ email, password });
+    if (!error && data.session) {
+      this.checkAdminStatus(data.session.user);
+    }
     return { error };
   }
 
-  async loginWithGithub(): Promise<{ error: unknown }> {
-    const { error } = await this.supabase.auth.signInWithOAuth({
-      provider: 'github',
-      options: {
-        redirectTo: this.getAuthRedirectUrl(),
-      },
-    });
+  async loginWithGoogle(redirectTo?: string): Promise<void> {
+    await this.supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectTo || window.location.origin + '/portal' } });
+  }
+
+  async loginWithGithub(redirectTo?: string): Promise<void> {
+    await this.supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: redirectTo || window.location.origin + '/portal' } });
+  }
+
+  async updatePassword(newPassword: string): Promise<{error: unknown}> {
+    const { error } = await this.supabase.auth.updateUser({ password: newPassword });
     return { error };
   }
 
   async logout() {
     await this.supabase.auth.signOut();
-    this.isAdmin.set(false);
+    this.checkAdminStatus(null);
   }
 
   async checkSession() {
-    await this.processOAuthRedirectIfNeeded();
     const { data: { session } } = await this.supabase.auth.getSession();
-    this.isAdmin.set(!!session);
-    this.initAuthListener();
-  }
-
-  async getOAuthErrorFromUrl(): Promise<string | null> {
-    if (!isPlatformBrowser(this.platformId)) return null;
-    const url = new URL(window.location.href);
-    const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
-    const errorDescription =
-      url.searchParams.get('error_description') ||
-      hashParams.get('error_description') ||
-      url.searchParams.get('error') ||
-      hashParams.get('error');
-    if (!errorDescription) return null;
-    return decodeURIComponent(errorDescription.replace(/\+/g, ' '));
-  }
-
-  consumeAuthError(): string {
-    const err = this.authError();
-    if (err) this.authError.set('');
-    return err;
-  }
-
-  private initAuthListener() {
-    if (this.authListenerInitialized) return;
-
+    if (session) {
+      this.checkAdminStatus(session.user);
+    } else {
+      this.checkAdminStatus(null);
+    }
+    
+    // Listen for auth changes
     this.supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
-        this.isAdmin.set(!!session);
+      if (event === 'SIGNED_IN' && session) {
+        this.checkAdminStatus(session.user);
       } else if (event === 'SIGNED_OUT') {
-        this.isAdmin.set(false);
+        this.checkAdminStatus(null);
       }
     });
-
-    this.authListenerInitialized = true;
-  }
-
-  private getAuthRedirectUrl(): string | undefined {
-    if (!isPlatformBrowser(this.platformId)) return undefined;
-    return `${window.location.origin}/admin`;
-  }
-
-  private async processOAuthRedirectIfNeeded() {
-    if (!isPlatformBrowser(this.platformId)) return;
-    const url = new URL(window.location.href);
-    const hashParams = new URLSearchParams(url.hash.replace(/^#/, ''));
-    const code = url.searchParams.get('code');
-    const accessToken = hashParams.get('access_token');
-    const refreshToken = hashParams.get('refresh_token');
-
-    try {
-      if (code) {
-        const { error } = await this.supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          this.authError.set(error.message);
-        }
-      } else if (accessToken && refreshToken) {
-        const { error } = await this.supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken,
-        });
-        if (error) {
-          this.authError.set(error.message);
-        }
-      }
-    } catch (e) {
-      this.authError.set((e as Error).message || 'Authentication callback failed.');
-    }
-
-    // Clean OAuth params from URL after callback processing.
-    url.searchParams.delete('code');
-    url.searchParams.delete('state');
-    url.searchParams.delete('error');
-    url.searchParams.delete('error_code');
-    url.searchParams.delete('error_description');
-    window.history.replaceState({}, document.title, `${url.pathname}${url.search}`);
   }
 
   // 2. Fetch Content
@@ -188,6 +141,30 @@ export class SupabaseService {
        return !error;
     } else {
        const { error } = await this.supabase.from('site_content').insert({ section, content: payload });
+       return !error;
+    }
+  }
+
+  // Save Forge Project (User)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async saveProject(projectId: string, payload: any): Promise<boolean> {
+    if (!this.isLoggedIn() || !this.currentUser()) return false;
+    
+    const userId = this.currentUser()!.id;
+    
+    // Check if project exists
+    const { data: existing } = await this.supabase
+      .from('projects')
+      .select('id')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .single();
+
+    if (existing) {
+       const { error } = await this.supabase.from('projects').update({ content: payload, updated_at: new Date().toISOString() }).eq('id', projectId).eq('user_id', userId);
+       return !error;
+    } else {
+       const { error } = await this.supabase.from('projects').insert({ id: projectId, user_id: userId, content: payload });
        return !error;
     }
   }
