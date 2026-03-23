@@ -11,7 +11,6 @@ import os from 'node:os';
 import nodemailer from 'nodemailer';
 import { GoogleGenAI, Type } from '@google/genai';
 import 'dotenv/config';
-import multer from 'multer';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -22,15 +21,6 @@ const angularApp = new AngularNodeAppEngine();
 // --- Backend API ---
 const allowedEmails = ['azeem.makhdum6@gmail.com', 'abbas585@gmail.com'];
 // Simple file-based DB
-
-// Configure multer for file uploads
-const upload = multer({ 
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-    files: 5 // Max 5 files
-  }
-});
 const DB_FILE = join(os.tmpdir(), 'data.json');
 function readDB() {
   try {
@@ -207,11 +197,8 @@ app.get('/api/forge/credits', (req, res) => {
   res.json({ credits: db.forgeUsers[sessionId].credits });
 });
 
-app.post('/api/forge/generate', upload.array('files', 5), async (req, res) => {
-  const { sessionId, prompt } = req.body;
-  const files = req.files as Express.Multer.File[];
-  const { apiKey } = req.body;
-  
+app.post('/api/forge/generate', async (req, res) => {
+  const { sessionId, prompt, apiKey } = req.body;
   if (!sessionId || !prompt) {
     res.status(400).json({ error: 'Session ID and prompt required' });
     return;
@@ -242,20 +229,6 @@ app.post('/api/forge/generate', upload.array('files', 5), async (req, res) => {
   
   // Don't log the actual key, just where it came from
   console.log('Using API Key from:', customKey ? 'custom' : (envKey ? 'env' : 'global'));
-
-  // Add file context to the prompt if files are uploaded
-  let enhancedPrompt = prompt;
-  if (files && files.length > 0) {
-    enhancedPrompt += '\n\nATTACHED FILES:\n';
-    files.forEach((file, index) => {
-      enhancedPrompt += `\n${index + 1}. ${file.originalname} (${file.mimetype}, ${Math.round(file.size / 1024)}KB)\n`;
-      if (file.mimetype.startsWith('image/')) {
-        enhancedPrompt += '[IMAGE FILE - Please analyze this image]\n';
-      } else {
-        enhancedPrompt += '[CODE FILE - Please review this code]\n';
-      }
-    });
-  }
 
   const ai = new GoogleGenAI({ apiKey: finalApiKey });
   
@@ -301,7 +274,7 @@ OUTPUT FORMAT:
   try {
     console.log('Testing API key with countTokens...');
     const tokenCount = await ai.models.countTokens({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-2.5-flash-native-audio-preview-12-2025',
       contents: 'Hello world test'
     });
     console.log('API key works! Token count:', tokenCount.totalTokens);
@@ -318,10 +291,10 @@ OUTPUT FORMAT:
 
     if (userCredits >= 10) {
       try {
-        console.log('Attempting to use model: gemini-3.1-pro-preview');
+        console.log('Attempting to use model: gemini-2.5-flash-native-audio-preview-12-2025');
         const response = await ai.models.generateContent({
-          model: 'gemini-3.1-pro-preview',
-          contents: enhancedPrompt,
+          model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+          contents: prompt,
           config
         });
         responseText = response.text || '';
@@ -329,10 +302,10 @@ OUTPUT FORMAT:
         cost = 10;
       } catch (proError) {
         console.warn('Pro model failed, falling back to Flash...', proError);
-        console.log('Attempting to use fallback model: gemini-3-flash-preview');
+        console.log('Attempting to use fallback model: gemini-2.5-flash-native-audio-preview-12-2025');
         const response = await ai.models.generateContent({
-          model: 'gemini-3-flash-preview',
-          contents: enhancedPrompt,
+          model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+          contents: prompt,
           config
         });
         responseText = response.text || '';
@@ -340,10 +313,10 @@ OUTPUT FORMAT:
         cost = 2;
       }
     } else {
-      console.log('Using default model: gemini-3-flash-preview');
+      console.log('Using default model: gemini-2.5-flash-native-audio-preview-12-2025');
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: enhancedPrompt,
+        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+        contents: prompt,
         config
       });
       responseText = response.text || '';

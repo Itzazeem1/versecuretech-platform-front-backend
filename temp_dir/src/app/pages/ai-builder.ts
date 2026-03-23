@@ -5,6 +5,7 @@ import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { GoogleGenAI } from '@google/genai';
 import { SupabaseService } from '../services/supabase.service';
 import { RouterLink } from '@angular/router';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-ai-builder',
@@ -118,7 +119,7 @@ export class AiBuilderComponent {
     this.successMessage.set('');
 
     try {
-      const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+      const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] || 'YOUR_GEMINI_API_KEY' });
       
       const systemInstruction = `You are an expert frontend developer and UI/UX designer.
         Your task is to generate a complete, single-file HTML document based on the user's request.
@@ -133,7 +134,7 @@ export class AiBuilderComponent {
         7. Ensure the design is modern, responsive, and accessible.`;
 
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
         contents: this.prompt(),
         config: {
           systemInstruction,
@@ -144,10 +145,10 @@ export class AiBuilderComponent {
       let htmlContent = response.text || '';
       
       // Clean up markdown if the model accidentally includes it
-      if (htmlContent.startsWith('```html')) {
-        htmlContent = htmlContent.replace(/^```html\n/, '').replace(/\n```$/, '');
-      } else if (htmlContent.startsWith('```')) {
-        htmlContent = htmlContent.replace(/^```\n/, '').replace(/\n```$/, '');
+      if (htmlContent.startsWith('\`\`\`html')) {
+        htmlContent = htmlContent.replace(/^\`\`\`html\\n/, '').replace(/\\n\`\`\`$/, '');
+      } else if (htmlContent.startsWith('\`\`\`')) {
+        htmlContent = htmlContent.replace(/^\`\`\`\\n/, '').replace(/\\n\`\`\`$/, '');
       }
 
       this.generatedHtml.set(htmlContent);
@@ -181,7 +182,7 @@ export class AiBuilderComponent {
       } else {
         this.error.set('Failed to save to database. Are you logged in as Admin?');
       }
-    } catch {
+    } catch (err: unknown) {
       this.error.set('An error occurred while saving.');
     } finally {
       this.saving.set(false);
