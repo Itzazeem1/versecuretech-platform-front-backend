@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import nodemailer from 'nodemailer';
 import { GoogleGenAI, Type } from '@google/genai';
+import 'dotenv/config';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -379,7 +380,7 @@ app.use((req, res, next) => {
 import { Server } from 'socket.io';
 
 if (isMainModule(import.meta.url) || process.env['pm_id']) {
-  const port = process.env['PORT'] || 4003;
+  const port = process.env['PORT'] || 4200;
   const server = app.listen(port, () => {
     console.log('Starting server with build timestamp:', new Date().toISOString());
     console.log(`Node Express server listening on http://localhost:${port}`);
