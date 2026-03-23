@@ -119,7 +119,7 @@ export class AiBuilderComponent {
     this.successMessage.set('');
 
     try {
-      const ai = new GoogleGenAI({ apiKey: environment.geminiApiKey });
+      const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] || 'YOUR_GEMINI_API_KEY' });
       
       const systemInstruction = `You are an expert frontend developer and UI/UX designer.
         Your task is to generate a complete, single-file HTML document based on the user's request.
