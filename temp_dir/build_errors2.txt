@@ -1,0 +1,628 @@
+[33mΓ¥»[39m Building...
+node.exe : 
+THREE.THREE.Clock: 
+This module has been 
+deprecated. Please use 
+THREE.Timer instead.
+At C:\Users\azeem\AppDa
+ta\Roaming\npm\ng.ps1:2
+4 char:5
++     & "node$exe"  "$b
+asedir/node_modules/@an
+gular/cli/bin/ng.js" 
+$arg ...
++     ~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (THREE.THREE.C   
+ lo....Timer instea    
+d.:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+THREE.THREE.Clock: 
+This module has been 
+deprecated. Please use 
+THREE.Timer instead.
+THREE.THREE.Clock: 
+This module has been 
+deprecated. Please use 
+THREE.Timer instead.
+uncaughtException 
+ReferenceError: window 
+is not defined
+    at i.ngOnDestroy (f
+ile:///C:/Users/azeem/D
+ownloads/versecuretech/
+.angular/prerender-root
+/0d13bf7a-ea56-420a-a8f
+f-23a1430ea03a/chunk-TM
+BSQRIG.mjs:4130:1102)
+    at Sb (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/0d13bf7a-e
+a56-420a-a8ff-23a1430ea
+03a/chunk-A52QMECV.mjs:
+5:56867)
+    at Ad (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/0d13bf7a-e
+a56-420a-a8ff-23a1430ea
+03a/chunk-A52QMECV.mjs:
+5:55512)
+    at Ib (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/0d13bf7a-e
+a56-420a-a8ff-23a1430ea
+03a/chunk-A52QMECV.mjs:
+5:55208)
+    at jc (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/0d13bf7a-e
+a56-420a-a8ff-23a1430ea
+03a/chunk-A52QMECV.mjs:
+5:55417)
+    at Gn.destroy (file
+:///C:/Users/azeem/Down
+loads/versecuretech/.an
+gular/prerender-root/0d
+13bf7a-ea56-420a-a8ff-2
+3a1430ea03a/chunk-A52QM
+ECV.mjs:5:67980)
+    at file:///C:/Users
+/azeem/Downloads/versec
+uretech/.angular/preren
+der-root/0d13bf7a-ea56-
+420a-a8ff-23a1430ea03a/
+chunk-A52QMECV.mjs:31:3
+7801
+    at Array.forEach 
+(<anonymous>)
+    at e.ngOnDestroy (f
+ile:///C:/Users/azeem/D
+ownloads/versecuretech/
+.angular/prerender-root
+/0d13bf7a-ea56-420a-a8f
+f-23a1430ea03a/chunk-A5
+2QMECV.mjs:31:37788)
+    at Ir.destroy (file
+:///C:/Users/azeem/Down
+loads/versecuretech/.an
+gular/prerender-root/0d
+13bf7a-ea56-420a-a8ff-2
+3a1430ea03a/chunk-A52QM
+ECV.mjs:5:6335)
+uncaughtException 
+ReferenceError: window 
+is not defined
+    at i.ngOnDestroy (f
+ile:///C:/Users/azeem/D
+ownloads/versecuretech/
+.angular/prerender-root
+/14185f27-1714-4ec7-806
+f-078b368b7ece/chunk-TM
+BSQRIG.mjs:4130:1102)
+    at Sb (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/14185f27-1
+714-4ec7-806f-078b368b7
+ece/chunk-A52QMECV.mjs:
+5:56867)
+    at Ad (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/14185f27-1
+714-4ec7-806f-078b368b7
+ece/chunk-A52QMECV.mjs:
+5:55512)
+    at Ib (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/14185f27-1
+714-4ec7-806f-078b368b7
+ece/chunk-A52QMECV.mjs:
+5:55208)
+    at jc (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/14185f27-1
+714-4ec7-806f-078b368b7
+ece/chunk-A52QMECV.mjs:
+5:55417)
+    at Gn.destroy (file
+:///C:/Users/azeem/Down
+loads/versecuretech/.an
+gular/prerender-root/14
+185f27-1714-4ec7-806f-0
+78b368b7ece/chunk-A52QM
+ECV.mjs:5:67980)
+    at file:///C:/Users
+/azeem/Downloads/versec
+uretech/.angular/preren
+der-root/14185f27-1714-
+4ec7-806f-078b368b7ece/
+chunk-A52QMECV.mjs:31:3
+7801
+    at Array.forEach 
+(<anonymous>)
+    at e.ngOnDestroy (f
+ile:///C:/Users/azeem/D
+ownloads/versecuretech/
+.angular/prerender-root
+/14185f27-1714-4ec7-806
+f-078b368b7ece/chunk-A5
+2QMECV.mjs:31:37788)
+    at Ir.destroy (file
+:///C:/Users/azeem/Down
+loads/versecuretech/.an
+gular/prerender-root/14
+185f27-1714-4ec7-806f-0
+78b368b7ece/chunk-A52QM
+ECV.mjs:5:6335)
+uncaughtException 
+ReferenceError: window 
+is not defined
+    at i.ngOnDestroy (f
+ile:///C:/Users/azeem/D
+ownloads/versecuretech/
+.angular/prerender-root
+/8b9b32c2-8e43-4deb-8c3
+f-898fd8522314/chunk-TM
+BSQRIG.mjs:4130:1102)
+    at Sb (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/8b9b32c2-8
+e43-4deb-8c3f-898fd8522
+314/chunk-A52QMECV.mjs:
+5:56867)
+    at Ad (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/8b9b32c2-8
+e43-4deb-8c3f-898fd8522
+314/chunk-A52QMECV.mjs:
+5:55512)
+    at Ib (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/8b9b32c2-8
+e43-4deb-8c3f-898fd8522
+314/chunk-A52QMECV.mjs:
+5:55208)
+    at jc (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/8b9b32c2-8
+e43-4deb-8c3f-898fd8522
+314/chunk-A52QMECV.mjs:
+5:55417)
+    at Gn.destroy (file
+:///C:/Users/azeem/Down
+loads/versecuretech/.an
+gular/prerender-root/8b
+9b32c2-8e43-4deb-8c3f-8
+98fd8522314/chunk-A52QM
+ECV.mjs:5:67980)
+    at file:///C:/Users
+/azeem/Downloads/versec
+uretech/.angular/preren
+der-root/8b9b32c2-8e43-
+4deb-8c3f-898fd8522314/
+chunk-A52QMECV.mjs:31:3
+7801
+    at Array.forEach 
+(<anonymous>)
+    at e.ngOnDestroy (f
+ile:///C:/Users/azeem/D
+ownloads/versecuretech/
+.angular/prerender-root
+/8b9b32c2-8e43-4deb-8c3
+f-898fd8522314/chunk-A5
+2QMECV.mjs:31:37788)
+    at Ir.destroy (file
+:///C:/Users/azeem/Down
+loads/versecuretech/.an
+gular/prerender-root/8b
+9b32c2-8e43-4deb-8c3f-8
+98fd8522314/chunk-A52QM
+ECV.mjs:5:6335)
+THREE.THREE.Clock: 
+This module has been 
+deprecated. Please use 
+THREE.Timer instead.
+uncaughtException 
+ReferenceError: window 
+is not defined
+    at i.ngOnDestroy (f
+ile:///C:/Users/azeem/D
+ownloads/versecuretech/
+.angular/prerender-root
+/14185f27-1714-4ec7-806
+f-078b368b7ece/chunk-TM
+BSQRIG.mjs:4130:1102)
+    at Sb (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/14185f27-1
+714-4ec7-806f-078b368b7
+ece/chunk-A52QMECV.mjs:
+5:56867)
+    at Ad (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/14185f27-1
+714-4ec7-806f-078b368b7
+ece/chunk-A52QMECV.mjs:
+5:55512)
+    at Ib (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/14185f27-1
+714-4ec7-806f-078b368b7
+ece/chunk-A52QMECV.mjs:
+5:55208)
+    at jc (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/14185f27-1
+714-4ec7-806f-078b368b7
+ece/chunk-A52QMECV.mjs:
+5:55417)
+    at Gn.destroy (file
+:///C:/Users/azeem/Down
+loads/versecuretech/.an
+gular/prerender-root/14
+185f27-1714-4ec7-806f-0
+78b368b7ece/chunk-A52QM
+ECV.mjs:5:67980)
+    at file:///C:/Users
+/azeem/Downloads/versec
+uretech/.angular/preren
+der-root/14185f27-1714-
+4ec7-806f-078b368b7ece/
+chunk-A52QMECV.mjs:31:3
+7801
+    at Array.forEach 
+(<anonymous>)
+    at e.ngOnDestroy (f
+ile:///C:/Users/azeem/D
+ownloads/versecuretech/
+.angular/prerender-root
+/14185f27-1714-4ec7-806
+f-078b368b7ece/chunk-A5
+2QMECV.mjs:31:37788)
+    at Ir.destroy (file
+:///C:/Users/azeem/Down
+loads/versecuretech/.an
+gular/prerender-root/14
+185f27-1714-4ec7-806f-0
+78b368b7ece/chunk-A52QM
+ECV.mjs:5:6335)
+THREE.THREE.Clock: 
+This module has been 
+deprecated. Please use 
+THREE.Timer instead.
+uncaughtException 
+ReferenceError: window 
+is not defined
+    at i.ngOnDestroy (f
+ile:///C:/Users/azeem/D
+ownloads/versecuretech/
+.angular/prerender-root
+/0d13bf7a-ea56-420a-a8f
+f-23a1430ea03a/chunk-TM
+BSQRIG.mjs:4130:1102)
+    at Sb (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/0d13bf7a-e
+a56-420a-a8ff-23a1430ea
+03a/chunk-A52QMECV.mjs:
+5:56867)
+    at Ad (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/0d13bf7a-e
+a56-420a-a8ff-23a1430ea
+03a/chunk-A52QMECV.mjs:
+5:55512)
+    at Ib (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/0d13bf7a-e
+a56-420a-a8ff-23a1430ea
+03a/chunk-A52QMECV.mjs:
+5:55208)
+    at jc (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/0d13bf7a-e
+a56-420a-a8ff-23a1430ea
+03a/chunk-A52QMECV.mjs:
+5:55417)
+    at Gn.destroy (file
+:///C:/Users/azeem/Down
+loads/versecuretech/.an
+gular/prerender-root/0d
+13bf7a-ea56-420a-a8ff-2
+3a1430ea03a/chunk-A52QM
+ECV.mjs:5:67980)
+    at file:///C:/Users
+/azeem/Downloads/versec
+uretech/.angular/preren
+der-root/0d13bf7a-ea56-
+420a-a8ff-23a1430ea03a/
+chunk-A52QMECV.mjs:31:3
+7801
+    at Array.forEach 
+(<anonymous>)
+    at e.ngOnDestroy (f
+ile:///C:/Users/azeem/D
+ownloads/versecuretech/
+.angular/prerender-root
+/0d13bf7a-ea56-420a-a8f
+f-23a1430ea03a/chunk-A5
+2QMECV.mjs:31:37788)
+    at Ir.destroy (file
+:///C:/Users/azeem/Down
+loads/versecuretech/.an
+gular/prerender-root/0d
+13bf7a-ea56-420a-a8ff-2
+3a1430ea03a/chunk-A52QM
+ECV.mjs:5:6335)
+THREE.THREE.Clock: 
+This module has been 
+deprecated. Please use 
+THREE.Timer instead.
+Ethereal Email account created. Check console for message URLs. (Set SMTP_HOST, SMTP_USER, SMTP_PASS for real emails)
+uncaughtException 
+ReferenceError: window 
+is not defined
+    at i.ngOnDestroy (f
+ile:///C:/Users/azeem/D
+ownloads/versecuretech/
+.angular/prerender-root
+/0d13bf7a-ea56-420a-a8f
+f-23a1430ea03a/chunk-TM
+BSQRIG.mjs:4130:1102)
+    at Sb (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/0d13bf7a-e
+a56-420a-a8ff-23a1430ea
+03a/chunk-A52QMECV.mjs:
+5:56867)
+    at Ad (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/0d13bf7a-e
+a56-420a-a8ff-23a1430ea
+03a/chunk-A52QMECV.mjs:
+5:55512)
+    at Ib (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/0d13bf7a-e
+a56-420a-a8ff-23a1430ea
+03a/chunk-A52QMECV.mjs:
+5:55208)
+    at jc (file:///C:/U
+sers/azeem/Downloads/ve
+rsecuretech/.angular/pr
+erender-root/0d13bf7a-e
+a56-420a-a8ff-23a1430ea
+03a/chunk-A52QMECV.mjs:
+5:55417)
+    at Gn.destroy (file
+:///C:/Users/azeem/Down
+loads/versecuretech/.an
+gular/prerender-root/0d
+13bf7a-ea56-420a-a8ff-2
+3a1430ea03a/chunk-A52QM
+ECV.mjs:5:67980)
+    at file:///C:/Users
+/azeem/Downloads/versec
+uretech/.angular/preren
+der-root/0d13bf7a-ea56-
+420a-a8ff-23a1430ea03a/
+chunk-A52QMECV.mjs:31:3
+7801
+    at Array.forEach 
+(<anonymous>)
+    at e.ngOnDestroy (f
+ile:///C:/Users/azeem/D
+ownloads/versecuretech/
+.angular/prerender-root
+/0d13bf7a-ea56-420a-a8f
+f-23a1430ea03a/chunk-A5
+2QMECV.mjs:31:37788)
+    at Ir.destroy (file
+:///C:/Users/azeem/Down
+loads/versecuretech/.an
+gular/prerender-root/0d
+13bf7a-ea56-420a-a8ff-2
+3a1430ea03a/chunk-A52QM
+ECV.mjs:5:6335)
+Ethereal Email account created. Check console for message URLs. (Set SMTP_HOST, SMTP_USER, SMTP_PASS for real emails)
+[32mΓ£ö[39m Building...
+[35mBrowser bundles[39m     
+[1mInitial chunk files[22m [2m | [22m[1mNames[22m           [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-6RFBZXYF.js[39m   [2m | [22m[2m-[22m               [2m | [22m[36m316.29 kB[39m[2m | [22m               [36m92.73 kB[39m
+[32mstyles-4NSZCAQF.css[39m [2m | [22m[2mstyles[22m          [2m | [22m [36m80.84 kB[39m[2m | [22m                [36m8.93 kB[39m
+[32mmain-MYM4Q5SL.js[39m    [2m | [22m[2mmain[22m            [2m | [22m [36m24.86 kB[39m[2m | [22m                [36m6.86 kB[39m
+[32mchunk-KAT7YFEL.js[39m   [2m | [22m[2m-[22m               [2m | [22m[36m898 bytes[39m[2m | [22m              [36m898 bytes[39m
+
+[1m [22m                   [2m | [22m[1mInitial total[22m   [2m | [22m[1m422.88 kB[22m[2m | [22m              [1m109.41 kB[22m
+
+[1mLazy chunk files[22m    [2m | [22m[1mNames[22m           [2m | [22m [1mRaw size[22m[2m | [22m[1mEstimated transfer size[22m
+[32mchunk-WPXWSHOX.js[39m   [2m | [22m[2m-[22m               [2m | [22m[36m507.92 kB[39m[2m | [22m              [36m107.39 kB[39m
+[32mchunk-YIIEKTDJ.js[39m   [2m | [22m[2mforge[22m           [2m | [22m[36m275.42 kB[39m[2m | [22m               [36m44.33 kB[39m
+[32mchunk-XLQTGEPE.js[39m   [2m | [22m[2m-[22m               [2m | [22m[36m174.60 kB[39m[2m | [22m               [36m39.37 kB[39m
+[32mchunk-IFWVOUZA.js[39m   [2m | [22m[2mScrollTrigger[22m   [2m | [22m [36m43.26 kB[39m[2m | [22m               [36m16.29 kB[39m
+[32mchunk-NQMRDVO3.js[39m   [2m | [22m[2m-[22m               [2m | [22m [36m34.32 kB[39m[2m | [22m                [36m7.38 kB[39m
+[32mchunk-HVUF36AQ.js[39m   [2m | [22m[2madmin[22m           [2m | [22m [36m28.04 kB[39m[2m | [22m                [36m6.12 kB[39m
+[32mchunk-PL3RMAIR.js[39m   [2m | [22m[2mservice-detail[22m  [2m | [22m [36m11.59 kB[39m[2m | [22m                [36m3.49 kB[39m
+[32mchunk-BXF6OT6H.js[39m   [2m | [22m[2mcontact[22m         [2m | [22m  [36m9.35 kB[39m[2m | [22m                [36m2.78 kB[39m
+[32mchunk-7JIUYYAK.js[39m   [2m | [22m[2mhome[22m            [2m | [22m  [36m8.53 kB[39m[2m | [22m                [36m2.79 kB[39m
+[32mchunk-MREEHT5I.js[39m   [2m | [22m[2m-[22m               [2m | [22m  [36m7.46 kB[39m[2m | [22m                [36m1.85 kB[39m
+[32mchunk-3Z4VSRIV.js[39m   [2m | [22m[2mwork[22m            [2m | [22m  [36m6.60 kB[39m[2m | [22m                [36m2.05 kB[39m
+[32mchunk-CVJUF7WJ.js[39m   [2m | [22m[2mwork-detail[22m     [2m | [22m  [36m6.25 kB[39m[2m | [22m                [36m2.12 kB[39m
+[32mchunk-GEXCC7NF.js[39m   [2m | [22m[2mservices[22m        [2m | [22m  [36m6.23 kB[39m[2m | [22m                [36m2.03 kB[39m
+[32mchunk-MPRJ4LAV.js[39m   [2m | [22m[2mlogin[22m           [2m | [22m  [36m5.96 kB[39m[2m | [22m                [36m1.92 kB[39m
+[32mchunk-X63T5DUR.js[39m   [2m | [22m[2mportal[22m          [2m | [22m  [36m5.84 kB[39m[2m | [22m                [36m1.81 kB[39m
+[2m...and 5 more lazy chunks files. Use "--verbose" to show all the files.[22m
+
+
+[35mServer bundles[39m      
+[1mInitial chunk files[22m [2m | [22m[1mNames[22m           [2m | [22m [1mRaw size[22m
+[32mserver.mjs[39m          [2m | [22m[2mserver[22m          [2m | [22m  [36m1.52 MB[39m[2m | [22m                       
+[32mmain.server.mjs[39m     [2m | [22m[2mmain.server[22m     [2m | [22m[36m464.35 kB[39m[2m | [22m                       
+[32mchunk-A52QMECV.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m[36m337.80 kB[39m[2m | [22m                       
+[32mpolyfills.server.mjs[39m[2m | [22m[2mpolyfills.server[22m[2m | [22m[36m233.68 kB[39m[2m | [22m                       
+[32mchunk-NT4GZT32.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m  [36m1.43 kB[39m[2m | [22m                       
+[32mchunk-LQBROMNA.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m  [36m1.40 kB[39m[2m | [22m                       
+
+[1mLazy chunk files[22m    [2m | [22m[1mNames[22m           [2m | [22m [1mRaw size[22m
+[32mchunk-TMBSQRIG.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m[36m507.96 kB[39m[2m | [22m                       
+[32mchunk-SL5UPJVZ.mjs[39m  [2m | [22m[2mforge[22m           [2m | [22m[36m499.55 kB[39m[2m | [22m                       
+[32mchunk-BSNKIG33.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m[36m174.64 kB[39m[2m | [22m                       
+[32mchunk-MRTEFNBA.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m [36m67.74 kB[39m[2m | [22m                       
+[32mchunk-ZAHYYYVJ.mjs[39m  [2m | [22m[2mScrollTrigger[22m   [2m | [22m [36m43.30 kB[39m[2m | [22m                       
+[32mchunk-SD4MRBYA.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m [36m34.36 kB[39m[2m | [22m                       
+[32mchunk-3NMKDOOG.mjs[39m  [2m | [22m[2madmin[22m           [2m | [22m [36m28.09 kB[39m[2m | [22m                       
+[32mchunk-QPD2CCWR.mjs[39m  [2m | [22m[2mindex[22m           [2m | [22m [36m20.63 kB[39m[2m | [22m                       
+[32mchunk-GM5FTG32.mjs[39m  [2m | [22m[2mindex[22m           [2m | [22m [36m18.18 kB[39m[2m | [22m                       
+[32mchunk-AE2WKTK2.mjs[39m  [2m | [22m[2mxhr2[22m            [2m | [22m [36m12.17 kB[39m[2m | [22m                       
+[32mchunk-FYOC2D2A.mjs[39m  [2m | [22m[2mxhr2[22m            [2m | [22m [36m12.07 kB[39m[2m | [22m                       
+[32mchunk-24GMQHM7.mjs[39m  [2m | [22m[2mservice-detail[22m  [2m | [22m [36m11.63 kB[39m[2m | [22m                       
+[32mchunk-Y752NWZP.mjs[39m  [2m | [22m[2mcontact[22m         [2m | [22m  [36m9.39 kB[39m[2m | [22m                       
+[32mchunk-OVVKUJRE.mjs[39m  [2m | [22m[2mhome[22m            [2m | [22m  [36m8.58 kB[39m[2m | [22m                       
+[32mchunk-JHCHBHJM.mjs[39m  [2m | [22m[2m-[22m               [2m | [22m  [36m7.50 kB[39m[2m | [22m                       
+[2m...and 11 more lazy chunks files. Use "--verbose" to show all the files.[22m
+
+[35mPrerendered 19 static routes.[39m
+Application bundle generation complete. [9.613 seconds] - 2026-03-22T10:54:53.796Z
+
+[1m[33m[33mΓû▓ [43;
+33m[[43;30mWARNING[43
+;33m][0m [1mModule 
+'debug' used by 'node_m
+odules/https-proxy-agen
+t/dist/index.js' is 
+not ESM[0m
+
+  CommonJS or AMD 
+dependencies can cause 
+optimization bailouts.
+  For more information 
+see: [4mhttps://angula
+r.dev/tools/cli/build#c
+onfiguring-commonjs-dep
+endencies[0m
+
+
+[33mΓû▓ [43;33m[[43;
+30mWARNING[43;33m][0m
+ [1mModule 
+'agent-base' used by 'n
+ode_modules/https-proxy
+-agent/dist/index.js' 
+is not ESM[0m
+
+  CommonJS or AMD 
+dependencies can cause 
+optimization bailouts.
+  For more information 
+see: [4mhttps://angula
+r.dev/tools/cli/build#c
+onfiguring-commonjs-dep
+endencies[0m
+
+
+[33mΓû▓ [43;33m[[43;
+30mWARNING[43;33m][0m
+ [1mModule 'p-retry' 
+used by 'node_modules/@
+google/genai/dist/node/
+index.mjs' is not 
+ESM[0m
+
+  CommonJS or AMD 
+dependencies can cause 
+optimization bailouts.
+  For more information 
+see: [4mhttps://angula
+r.dev/tools/cli/build#c
+onfiguring-commonjs-dep
+endencies[0m
+
+
+[33mΓû▓ [43;33m[[43;
+30mWARNING[43;33m][0m
+ [1mModule 
+'google-auth-library' 
+used by 'node_modules/@
+google/genai/dist/node/
+index.mjs' is not 
+ESM[0m
+
+  CommonJS or AMD 
+dependencies can cause 
+optimization bailouts.
+  For more information 
+see: [4mhttps://angula
+r.dev/tools/cli/build#c
+onfiguring-commonjs-dep
+endencies[0m
+
+
+[33mΓû▓ [43;33m[[43;
+30mWARNING[43;33m][0m
+ [1mModule 
+'node-domexception' 
+used by 'node_modules/f
+etch-blob/from.js' is 
+not ESM[0m
+
+  CommonJS or AMD 
+dependencies can cause 
+optimization bailouts.
+  For more information 
+see: [4mhttps://angula
+r.dev/tools/cli/build#c
+onfiguring-commonjs-dep
+endencies[0m
+
+
+[33mΓû▓ [43;33m[[43;
+30mWARNING[43;33m][0m
+ [1mModule 'web-stream
+s-polyfill/dist/ponyfil
+l.es2018.js' used by 'n
+ode_modules/fetch-blob/
+streams.cjs' is not 
+ESM[0m
+
+  CommonJS or AMD 
+dependencies can cause 
+optimization bailouts.
+  For more information 
+see: [4mhttps://angula
+r.dev/tools/cli/build#c
+onfiguring-commonjs-dep
+endencies[0m
+
+[39m[22m
+Output location: C:\Users\azeem\Downloads\versecuretech\dist\app
+

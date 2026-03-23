@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { HeaderComponent } from '../components/header';
-import { ForgeStateService } from '../services/forge-state.service';
+import { ForgeStateService, GeneratedFile } from '../services/forge-state.service';
 import { SupabaseService } from '../services/supabase.service';
 
 @Component({
@@ -69,58 +69,13 @@ import { SupabaseService } from '../services/supabase.service';
           </div>
           
           <div class="p-4 bg-[#0a0a0a] border-t border-[#222]">
-            <!-- File Upload Section -->
-            <div class="mb-3">
-              <div class="flex items-center gap-2 mb-2">
-                <button 
-                  (click)="fileInput?.click()"
-                  class="text-[10px] font-mono uppercase text-[#888] hover:text-white transition-colors">
-                  📎 Attach Files
-                </button>
-                <input 
-                  type="file" 
-                  #fileInput
-                  (change)="onFileSelect($event)"
-                  multiple
-                  accept="image/*,.js,.ts,.jsx,.tsx,.css,.scss,.html,.json,.xml,.yaml,.yml,.md,.txt,.py,.java,.cpp,.c,.h,.php,.rb,.go,.rs,.swift,.kt,.sql,.sh,.bat,.ps1"
-                  class="hidden">
-                >
-                @if (uploadedFiles().length > 0) {
-                  <span class="text-[10px] font-mono text-[#666]">
-                    {{ uploadedFiles().length }} file(s) selected
-                  </span>
-                  <button 
-                    (click)="clearFiles()"
-                    class="text-[10px] font-mono uppercase text-[#ff6b6b] hover:text-[#ff8787] ml-2">
-                    Clear
-                  </button>
-                }
-              </div>
-              @if (uploadedFiles().length > 0) {
-                <div class="flex flex-wrap gap-2 mb-2">
-                  @for (file of uploadedFiles(); track file.name) {
-                    <div class="flex items-center gap-1 bg-[#1a1a1a] px-2 py-1 rounded text-[10px] font-mono">
-                      <span class="text-[#888]">{{ file.type.startsWith('image/') ? '🖼️' : '📄' }}</span>
-                      <span class="text-[#ccc] truncate max-w-[100px]">{{ file.name }}</span>
-                      <span class="text-[#666]">({{ formatFileSize(file.size) }})</span>
-                      <button 
-                        (click)="removeFile(file)"
-                        class="text-[#ff6b6b] hover:text-[#ff8787] ml-1">
-                        ✕
-                      </button>
-                    </div>
-                  }
-                </div>
-              }
-            </div>
-            
             <div class="relative flex flex-col bg-[#0f0f0f] border border-[#333] focus-within:border-[#666] transition-colors">
               <textarea 
                 [(ngModel)]="prompt" 
                 (keydown.enter)="handleEnter($event)"
                 rows="3" 
                 class="w-full bg-transparent p-3 text-[13px] text-[#ededed] placeholder-[#555] focus:outline-none resize-none font-mono"
-                placeholder="> enter command or upload files above..."></textarea>
+                placeholder="> enter command..."></textarea>
               <div class="flex justify-between items-center px-3 py-2 border-t border-[#222] bg-[#0a0a0a]">
                 <div class="flex gap-3 text-[10px] font-mono text-[#666]">
                   <span>PRO: 10CR</span>
@@ -268,8 +223,6 @@ export class ForgeComponent implements OnInit {
   isChatOpen = signal(false);
   isExplorerOpen = signal(false);
   copyText = signal('Copy');
-  uploadedFiles = signal<File[]>([]);
-  fileInput: HTMLInputElement | null = null;
   
   state = inject(ForgeStateService);
   private sanitizer = inject(DomSanitizer);
@@ -323,37 +276,6 @@ export class ForgeComponent implements OnInit {
     }
   }
 
-  onFileSelect(event: Event) {
-    const input = event.target as HTMLInputElement;
-    const files = Array.from(input.files || []);
-    const currentFiles = this.uploadedFiles();
-    
-    files.forEach(file => {
-      if (!currentFiles.some(f => f.name === file.name)) {
-        currentFiles.push(file);
-      }
-    });
-    
-    this.uploadedFiles.set(currentFiles);
-  }
-
-  clearFiles() {
-    this.uploadedFiles.set([]);
-  }
-
-  removeFile(fileToRemove: File) {
-    const currentFiles = this.uploadedFiles().filter(f => f !== fileToRemove);
-    this.uploadedFiles.set(currentFiles);
-  }
-
-  formatFileSize(bytes: number): string {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-  }
-
   updatePreview() {
     const files = this.state.files();
     const htmlFile = files.find(f => f.path.endsWith('index.html'));
@@ -405,29 +327,14 @@ export class ForgeComponent implements OnInit {
 
   async generateWebsite() {
     const userPrompt = this.prompt().trim();
-    if (!userPrompt && this.uploadedFiles().length === 0) return;
+    if (!userPrompt) return;
     
     if (this.state.credits() < 2) {
       this.error.set('Insufficient credits. You need at least 2 credits to use Flash.');
       return;
     }
 
-    // Create file context for the AI
-    let fileContext = '';
-    if (this.uploadedFiles().length > 0) {
-      fileContext = '\n\nATTACHED FILES:\n';
-      for (const file of this.uploadedFiles()) {
-        fileContext += `\n- ${file.name} (${file.type}, ${this.formatFileSize(file.size)})\n`;
-        if (file.type.startsWith('image/')) {
-          fileContext += '[IMAGE FILE - Please analyze this image]\n';
-        } else {
-          fileContext += '[CODE FILE - Please review this code]\n';
-        }
-      }
-    }
-
-    const fullPrompt = userPrompt + fileContext;
-    this.state.addMessage({ role: 'user', text: userPrompt + (this.uploadedFiles().length > 0 ? `\n\n📎 ${this.uploadedFiles().length} file(s) attached` : '') });
+    this.state.addMessage({ role: 'user', text: userPrompt });
     this.prompt.set('');
     this.loading.set(true);
     this.error.set('');
@@ -435,20 +342,16 @@ export class ForgeComponent implements OnInit {
     try {
       const customKey = localStorage.getItem('custom_gemini_key');
       
-      const formData = new FormData();
-      formData.append('sessionId', this.state.sessionId());
-      formData.append('prompt', fullPrompt);
+      const payload: { sessionId: string; prompt: string; apiKey?: string } = {
+        sessionId: this.state.sessionId(),
+        prompt: userPrompt
+      };
       
       if (customKey) {
-        formData.append('apiKey', customKey);
+        payload.apiKey = customKey;
       }
       
-      // Add uploaded files to FormData
-      for (const file of this.uploadedFiles()) {
-        formData.append('files', file);
-      }
-      
-      this.http.post<{success: boolean, text: string, remainingCredits: number, usedModel: string, error?: string}>('/api/forge/generate', formData).subscribe({
+      this.http.post<{success: boolean, text: string, remainingCredits: number, usedModel: string, error?: string}>('/api/forge/generate', payload).subscribe({
         next: (response) => {
           this.loading.set(false);
           
