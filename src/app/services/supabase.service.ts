@@ -76,11 +76,29 @@ export class SupabaseService {
   }
 
   async loginWithGoogle(redirectTo?: string): Promise<void> {
-    await this.supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectTo || window.location.origin + '/portal' } });
+    const { data, error } = await this.supabase.auth.signInWithOAuth({ 
+      provider: 'google', 
+      options: { 
+        redirectTo: redirectTo || window.location.origin + '/portal',
+        skipBrowserRedirect: true
+      } 
+    });
+    if (data?.url) {
+      window.open(data.url, 'oauth_popup', 'width=600,height=700');
+    }
   }
 
   async loginWithGithub(redirectTo?: string): Promise<void> {
-    await this.supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: redirectTo || window.location.origin + '/portal' } });
+    const { data, error } = await this.supabase.auth.signInWithOAuth({ 
+      provider: 'github', 
+      options: { 
+        redirectTo: redirectTo || window.location.origin + '/portal',
+        skipBrowserRedirect: true
+      } 
+    });
+    if (data?.url) {
+      window.open(data.url, 'oauth_popup', 'width=600,height=700');
+    }
   }
 
   async updatePassword(newPassword: string): Promise<{error: unknown}> {

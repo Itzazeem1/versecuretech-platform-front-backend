@@ -11,7 +11,6 @@ import os from 'node:os';
 import nodemailer from 'nodemailer';
 import { GoogleGenAI, Type } from '@google/genai';
 import 'dotenv/config';
-import multer from 'multer';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -22,15 +21,6 @@ const angularApp = new AngularNodeAppEngine();
 // --- Backend API ---
 const allowedEmails = ['azeem.makhdum6@gmail.com', 'abbas585@gmail.com'];
 // Simple file-based DB
-
-// Configure multer for file uploads
-const upload = multer({ 
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-    files: 5 // Max 5 files
-  }
-});
 const DB_FILE = join(os.tmpdir(), 'data.json');
 function readDB() {
   try {
@@ -207,11 +197,8 @@ app.get('/api/forge/credits', (req, res) => {
   res.json({ credits: db.forgeUsers[sessionId].credits });
 });
 
-app.post('/api/forge/generate', upload.array('files', 5), async (req, res) => {
-  const { sessionId, prompt } = req.body;
-  const files = req.files as Express.Multer.File[];
-  const { apiKey } = req.body;
-  
+app.post('/api/forge/generate', async (req, res) => {
+  const { sessionId, prompt, apiKey } = req.body;
   if (!sessionId || !prompt) {
     res.status(400).json({ error: 'Session ID and prompt required' });
     return;
@@ -242,20 +229,6 @@ app.post('/api/forge/generate', upload.array('files', 5), async (req, res) => {
   
   // Don't log the actual key, just where it came from
   console.log('Using API Key from:', customKey ? 'custom' : (envKey ? 'env' : 'global'));
-
-  // Add file context to the prompt if files are uploaded
-  let enhancedPrompt = prompt;
-  if (files && files.length > 0) {
-    enhancedPrompt += '\n\nATTACHED FILES:\n';
-    files.forEach((file, index) => {
-      enhancedPrompt += `\n${index + 1}. ${file.originalname} (${file.mimetype}, ${Math.round(file.size / 1024)}KB)\n`;
-      if (file.mimetype.startsWith('image/')) {
-        enhancedPrompt += '[IMAGE FILE - Please analyze this image]\n';
-      } else {
-        enhancedPrompt += '[CODE FILE - Please review this code]\n';
-      }
-    });
-  }
 
   const ai = new GoogleGenAI({ apiKey: finalApiKey });
   
@@ -321,7 +294,7 @@ OUTPUT FORMAT:
         console.log('Attempting to use model: gemini-3.1-pro-preview');
         const response = await ai.models.generateContent({
           model: 'gemini-3.1-pro-preview',
-          contents: enhancedPrompt,
+          contents: prompt,
           config
         });
         responseText = response.text || '';
@@ -332,7 +305,7 @@ OUTPUT FORMAT:
         console.log('Attempting to use fallback model: gemini-3-flash-preview');
         const response = await ai.models.generateContent({
           model: 'gemini-3-flash-preview',
-          contents: enhancedPrompt,
+          contents: prompt,
           config
         });
         responseText = response.text || '';
@@ -343,7 +316,7 @@ OUTPUT FORMAT:
       console.log('Using default model: gemini-3-flash-preview');
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: enhancedPrompt,
+        contents: prompt,
         config
       });
       responseText = response.text || '';
@@ -367,6 +340,23 @@ OUTPUT FORMAT:
     console.error('Gemini API Error:', error);
     const errorMessage = (error as Error).message || 'Failed to generate content';
     
+    // Send email alert if the server API key is exhausted or invalid
+    if (!customKey && (errorMessage.includes('429') || errorMessage.includes('quota') || errorMessage.includes('403') || errorMessage.includes('API key not valid') || errorMessage.includes('PERMISSION_DENIED'))) {
+      if (transporter) {
+        try {
+          transporter.sendMail({
+            from: process.env['SMTP_USER'],
+            to: 'azeem6.makhdum@gmail.com',
+            subject: 'URGENT: Gemini API Key Exhausted/Invalid on Server',
+            text: `Your server's Gemini API key has run out of quota or is invalid. Please generate a new one and update your .env file.\n\nError Details:\n${errorMessage}`
+          });
+          console.log('API Key exhaustion alert email sent successfully via Nodemailer!');
+        } catch (emailErr) {
+          console.error('Failed to send API key alert email via Nodemailer:', emailErr);
+        }
+      }
+    }
+
     if (errorMessage.includes('API key not valid')) {
       const source = customKey ? 'custom API key' : 'server API key';
       res.status(500).json({ error: `The ${source} is not valid. Please check your settings and try again.` });

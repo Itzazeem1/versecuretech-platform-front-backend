@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 100" width="400" height="100">
+  <rect width="400" height="100" fill="#0a0a0a" rx="16" />
+  <text x="50%" y="55%" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="48" font-weight="600" fill="#ffffff" text-anchor="middle" dominant-baseline="middle" letter-spacing="-1">
+    Versecure<tspan fill="#3b82f6">.</tspan>
+  </text>
+</svg>
