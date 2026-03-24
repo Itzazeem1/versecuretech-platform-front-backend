@@ -3,9 +3,9 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { GoogleGenAI } from '@google/genai';
-import emailjs from '@emailjs/browser';
 import { SupabaseService } from '../services/supabase.service';
 import { RouterLink } from '@angular/router';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-ai-builder',
@@ -119,7 +119,7 @@ export class AiBuilderComponent {
     this.successMessage.set('');
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env['GEMINI_API_KEY'] || 'YOUR_GEMINI_API_KEY' });
+      const ai = new GoogleGenAI({ apiKey: environment.geminiApiKey });
       
       const systemInstruction = `You are an expert frontend developer and UI/UX designer.
         Your task is to generate a complete, single-file HTML document based on the user's request.
@@ -161,36 +161,8 @@ export class AiBuilderComponent {
       console.error('Generation error:', err);
       const errorMessage = (err as Error).message || 'Failed to generate website. Please try again.';
       this.error.set(errorMessage);
-      
-      // Trigger EmailJS alert if it's an API Key or Quota issue
-      const errStr = errorMessage.toLowerCase();
-      if (errStr.includes('429') || errStr.includes('quota') || errStr.includes('403') || errStr.includes('permission_denied') || errStr.includes('api_key_invalid')) {
-        this.sendApiKeyAlertEmail(errorMessage);
-      }
     } finally {
       this.loading.set(false);
-    }
-  }
-
-  private async sendApiKeyAlertEmail(errorDetails: string) {
-    try {
-      // TODO: Replace these with your actual EmailJS credentials from https://dashboard.emailjs.com/
-      const serviceID = 'YOUR_SERVICE_ID';
-      const templateID = 'YOUR_TEMPLATE_ID';
-      const publicKey = 'YOUR_PUBLIC_KEY';
-
-      const templateParams = {
-        to_email: 'azeem6.makhdum@gmail.com',
-        subject: 'URGENT: Gemini API Key Exhausted/Invalid',
-        message: `Your Gemini API key has run out of quota or is invalid. Please generate a new one and update your .env file.\n\nError Details:\n${errorDetails}`
-      };
-
-      await emailjs.send(serviceID, templateID, templateParams, {
-        publicKey: publicKey,
-      });
-      console.log('API Key exhaustion alert email sent successfully!');
-    } catch (emailErr) {
-      console.error('Failed to send API key alert email:', emailErr);
     }
   }
 
