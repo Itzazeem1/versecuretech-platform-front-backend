@@ -2,10 +2,8 @@ import { Component, signal, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { GoogleGenAI } from '@google/genai';
 import { SupabaseService } from '../services/supabase.service';
 import { RouterLink } from '@angular/router';
-import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-ai-builder',
@@ -119,42 +117,32 @@ export class AiBuilderComponent {
     this.successMessage.set('');
 
     try {
-      const ai = new GoogleGenAI({ apiKey: environment.geminiApiKey });
-      
-      const systemInstruction = `You are an expert frontend developer and UI/UX designer.
-        Your task is to generate a complete, single-file HTML document based on the user's request.
-        
-        CRITICAL REQUIREMENTS:
-        1. Output MUST be a SINGLE HTML file containing everything.
-        2. Include Tailwind CSS via CDN: <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-        3. Include any necessary Google Fonts.
-        4. Include functional Vanilla JavaScript inside a <script> tag at the end of the <body> for interactivity (sliders, toggles, modals, etc.).
-        5. DO NOT use React, Angular, or Vue. Only raw HTML, Tailwind classes, and Vanilla JS.
-        6. DO NOT wrap the output in markdown code blocks. Output ONLY the raw HTML string starting with <!DOCTYPE html>.
-        7. Ensure the design is modern, responsive, and accessible.`;
-
-      const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
-        contents: this.prompt(),
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-        }
+      // AI Builder will use server-side API key
+      const response = await fetch('/api/ai-builder/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: this.prompt(),
+          customKey: localStorage.getItem('custom_gemini_key') || undefined
+        }),
       });
-
-      let htmlContent = response.text || '';
       
-      // Clean up markdown if the model accidentally includes it
-      if (htmlContent.startsWith('```html')) {
-        htmlContent = htmlContent.replace(/^```html\n/, '').replace(/\n```$/, '');
-      } else if (htmlContent.startsWith('```')) {
-        htmlContent = htmlContent.replace(/^```\n/, '').replace(/\n```$/, '');
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-
-      this.generatedHtml.set(htmlContent);
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to generate website');
+      }
+      
+      this.generatedHtml.set(result.text);
       
       // Use data URI for the iframe source to allow scripts to run properly
-      const dataUri = `data:text/html;charset=utf-8,${encodeURIComponent(htmlContent)}`;
+      const dataUri = `data:text/html;charset=utf-8,${encodeURIComponent(result.text)}`;
       this.safeHtmlPreview.set(this.sanitizer.bypassSecurityTrustResourceUrl(dataUri));
       
     } catch (err: unknown) {

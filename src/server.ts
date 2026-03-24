@@ -391,6 +391,72 @@ OUTPUT FORMAT:
     }
   }
 });
+
+app.post('/api/ai-builder/generate', async (req, res) => {
+  const { prompt, customKey } = req.body;
+  
+  if (!prompt) {
+    res.status(400).json({ error: 'Prompt required' });
+    return;
+  }
+
+  try {
+    const envKey = process.env['GEMINI_API_KEY'];
+    const globalKey = typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : undefined;
+    
+    const finalApiKey = customKey || envKey || globalKey;
+    
+    if (!finalApiKey || finalApiKey === 'YOUR_GEMINI_API_KEY' || finalApiKey === '${GEMINI_API_KEY}') {
+      res.status(500).json({ error: 'Server missing Gemini API key. Please check your environment variables.' });
+      return;
+    }
+
+    const ai = new GoogleGenAI({ apiKey: finalApiKey });
+    
+    const systemInstruction = `You are an expert frontend developer and UI/UX designer.
+Your task is to generate a complete, single-file HTML document based on the user's request.
+
+CRITICAL REQUIREMENTS:
+1. Output MUST be a SINGLE HTML file containing everything.
+2. Include Tailwind CSS via CDN: <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+3. Include any necessary Google Fonts.
+4. Include functional Vanilla JavaScript inside a <script> tag at the end of the <body> for interactivity (sliders, toggles, modals, etc.).
+5. DO NOT use React, Angular, or Vue. Only raw HTML, Tailwind classes, and Vanilla JS.
+
+Your response should be ONLY the HTML code without any explanations or markdown formatting.
+Start directly with <!DOCTYPE html> and end with </html>.`;
+    
+    const config = {
+      systemInstruction,
+      temperature: 0.7,
+      maxOutputTokens: 8192,
+    };
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: prompt,
+      config
+    });
+
+    const htmlContent = response.text || '';
+    
+    if (!htmlContent) {
+      res.status(500).json({ error: 'No content generated' });
+      return;
+    }
+    
+    res.json({
+      success: true,
+      text: htmlContent
+    });
+
+  } catch (error: unknown) {
+    console.error('AI Builder API Error:', error);
+    const errorMessage = (error as Error).message || 'Failed to generate content';
+    res.status(500).json({ error: errorMessage });
+  }
+});
+
 // --- End Backend API ---
 
 /**
