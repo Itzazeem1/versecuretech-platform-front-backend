@@ -11,12 +11,22 @@ import os from 'node:os';
 import nodemailer from 'nodemailer';
 import { GoogleGenAI, Type } from '@google/genai';
 import 'dotenv/config';
+import multer from 'multer';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
 const app = express();
 app.use(express.json());
 const angularApp = new AngularNodeAppEngine();
+
+// Configure multer for file uploads
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024, // 10MB limit per file
+    files: 5 // Maximum 5 files
+  }
+});
 
 // --- Backend API ---
 const allowedEmails = ['azeem.makhdum6@gmail.com', 'abbas585@gmail.com'];
@@ -197,8 +207,10 @@ app.get('/api/forge/credits', (req, res) => {
   res.json({ credits: db.forgeUsers[sessionId].credits });
 });
 
-app.post('/api/forge/generate', async (req, res) => {
+app.post('/api/forge/generate', upload.array('files', 5), async (req, res) => {
   const { sessionId, prompt, apiKey } = req.body;
+  const files = req.files as Express.Multer.File[];
+  
   if (!sessionId || !prompt) {
     res.status(400).json({ error: 'Session ID and prompt required' });
     return;
@@ -229,6 +241,20 @@ app.post('/api/forge/generate', async (req, res) => {
   
   // Don't log the actual key, just where it came from
   console.log('Using API Key from:', customKey ? 'custom' : (envKey ? 'env' : 'global'));
+
+  // Add file context to prompt if files are uploaded
+  let enhancedPrompt = prompt;
+  if (files && files.length > 0) {
+    enhancedPrompt += '\n\nATTACHED FILES:\n';
+    files.forEach((file, index) => {
+      enhancedPrompt += `\n${index + 1}. ${file.originalname} (${file.mimetype}, ${Math.round(file.size / 1024)}KB)\n`;
+      if (file.mimetype.startsWith('image/')) {
+        enhancedPrompt += '[IMAGE FILE - Please analyze this image]\n';
+      } else {
+        enhancedPrompt += '[CODE FILE - Please review this code]\n';
+      }
+    });
+  }
 
   const ai = new GoogleGenAI({ apiKey: finalApiKey });
   
@@ -294,7 +320,7 @@ OUTPUT FORMAT:
         console.log('Attempting to use model: gemini-3.1-pro-preview');
         const response = await ai.models.generateContent({
           model: 'gemini-3.1-pro-preview',
-          contents: prompt,
+          contents: enhancedPrompt,
           config
         });
         responseText = response.text || '';
@@ -305,7 +331,7 @@ OUTPUT FORMAT:
         console.log('Attempting to use fallback model: gemini-3-flash-preview');
         const response = await ai.models.generateContent({
           model: 'gemini-3-flash-preview',
-          contents: prompt,
+          contents: enhancedPrompt,
           config
         });
         responseText = response.text || '';
@@ -316,7 +342,7 @@ OUTPUT FORMAT:
       console.log('Using default model: gemini-3-flash-preview');
       const response = await ai.models.generateContent({
         model: 'gemini-3-flash-preview',
-        contents: prompt,
+        contents: enhancedPrompt,
         config
       });
       responseText = response.text || '';
