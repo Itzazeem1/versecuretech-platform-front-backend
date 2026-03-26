@@ -36,8 +36,8 @@ import gsap from 'gsap';
             <div class="space-y-16">
               <div class="info-block">
                 <h4 class="text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-4 font-semibold">Transmission</h4>
-                <a href="mailto:hello@versecuretech.com" class="text-xl md:text-2xl font-light hover:text-[var(--accent-main)] transition-colors duration-300 relative group inline-block">
-                  hello&#64;versecuretech.com
+                <a href="mailto:hello.versecure@gmail.com" class="text-xl md:text-2xl font-light hover:text-[var(--accent-main)] transition-colors duration-300 relative group inline-block">
+                  hello.versecure&#64;gmail.com
                   <span class="absolute -bottom-2 left-0 w-0 h-[1px] bg-[var(--accent-main)] transition-all duration-300 group-hover:w-full opacity-50"></span>
                 </a>
               </div>
@@ -95,6 +95,17 @@ import gsap from 'gsap';
                      </select>
                   </div>
                   
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      <div class="flex flex-col gap-2 relative">
+                         <label for="company" class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Company [Organization]</label>
+                         <input id="company" type="text" name="company" class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors">
+                      </div>
+                      <div class="flex flex-col gap-2 relative">
+                         <label for="preferredTime" class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Preferred Transmission Time</label>
+                         <input id="preferredTime" type="text" name="preferredTime" placeholder="e.g. Afternoon, 2PM" class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors">
+                      </div>
+                  </div>
+
                   <div class="flex flex-col gap-2 relative">
                      <label for="message" class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Payload [Message]</label>
                      <textarea id="message" name="message" rows="4" required class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors resize-none"></textarea>
@@ -212,23 +223,38 @@ export class ContactComponent implements OnDestroy {
   async submitContact(event: Event) {
     event.preventDefault();
     const form = event.target as HTMLFormElement;
-    const formData = new FormData(form);
-    const data = Object.fromEntries(formData.entries());
     
     this.submitStatus.set('loading');
     
     try {
-      const res = await fetch('/api/contact', {
+      const firstName = (form.elements.namedItem('firstName') as HTMLInputElement).value;
+      const lastName = (form.elements.namedItem('lastName') as HTMLInputElement).value;
+      const email = (form.elements.namedItem('email') as HTMLInputElement).value;
+      const service = (form.elements.namedItem('service') as HTMLSelectElement).value;
+      const company = (form.elements.namedItem('company') as HTMLInputElement).value;
+      const preferredTime = (form.elements.namedItem('preferredTime') as HTMLInputElement).value;
+      const message = (form.elements.namedItem('message') as HTMLTextAreaElement).value;
+
+      const response = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
+        body: JSON.stringify({
+          firstName,
+          lastName,
+          email,
+          service,
+          company,
+          preferredTime,
+          message
+        })
       });
-      if (res.ok) {
-        this.submitStatus.set('success');
-      } else {
-        this.submitStatus.set('error');
-      }
-    } catch {
+
+      if (!response.ok) throw new Error('Backend transmission failed');
+
+      this.submitStatus.set('success');
+      form.reset();
+    } catch (error) {
+      console.error('Contact Error:', error);
       this.submitStatus.set('error');
     }
   }

@@ -249,7 +249,7 @@ export class ServiceDetailComponent implements OnInit, OnDestroy {
 
   async processPayment(method: PaymentMethod) {
     this.paymentStatus.set('processing');
-    
+
     try {
       const response = await this.paymentService.processPayment({
         method,

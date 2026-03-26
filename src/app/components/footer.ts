@@ -15,8 +15,8 @@ import { RouterLink } from '@angular/router';
           <div class="col-span-1 md:col-span-2">
             <h2 class="text-4xl font-display font-bold text-[var(--text-primary)] mb-6">Let's Build <br><span class="text-[var(--accent-main)]">Something Great.</span></h2>
             <p class="text-[var(--text-muted)] max-w-sm mb-8">Elevating brands through cinematic digital experiences, robust engineering, and strategic SEO.</p>
-            <a href="mailto:hello@versecuretech.com" class="inline-flex items-center gap-2 text-[var(--text-primary)] font-medium hover:text-[var(--accent-main)] transition-colors">
-              <span class="material-icons">email</span> hello&#64;versecuretech.com
+            <a href="mailto:hello.versecure@gmail.com" class="inline-flex items-center gap-2 text-[var(--text-primary)] font-medium hover:text-[var(--accent-main)] transition-colors">
+              <span class="material-icons">email</span> hello.versecure&#64;gmail.com
             </a>
           </div>
           
@@ -33,9 +33,7 @@ import { RouterLink } from '@angular/router';
           <div>
             <h3 class="text-lg font-display font-semibold text-[var(--text-primary)] mb-6">Connect</h3>
             <ul class="space-y-4 text-[var(--text-muted)]">
-              <li><a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--text-primary)] transition-colors">LinkedIn</a></li>
-              <li><a href="https://twitter.com" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--text-primary)] transition-colors">Twitter</a></li>
-              <li><a href="https://github.com" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--text-primary)] transition-colors">GitHub</a></li>
+              <li><a href="https://www.instagram.com/versecuretech/" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--text-primary)] transition-colors">Instagram</a></li>
               <li><a routerLink="/portal" class="hover:text-[var(--accent-main)] transition-colors">Client Portal</a></li>
             </ul>
           </div>

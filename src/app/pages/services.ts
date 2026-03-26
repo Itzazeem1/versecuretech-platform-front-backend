@@ -19,13 +19,17 @@ import gsap from 'gsap';
     <main class="relative z-10 min-h-screen pt-40 pb-20 text-[var(--text-primary)]">
       
       <!-- Hero Section -->
-      <section class="max-w-6xl mx-auto px-6 mb-32 md:mb-48 scene-anim">
-        <h1 class="huge-text font-display font-bold tracking-tight mb-8">
-          The Array.
-        </h1>
-        <p class="subtitle-text max-w-2xl">
-          We engineer digital ecosystems that drive growth and elevate your brand. From pixel-perfect web apps to impenetrable architectures.
-        </p>
+      <section class="max-w-6xl mx-auto px-6 mb-32 md:mb-48 scene-anim relative overflow-hidden rounded-[3rem] py-24 border border-[var(--text-primary)]/5">
+        <img src="/assets/images/services-bg.png" alt="Services Background" class="absolute inset-0 w-full h-full object-cover opacity-50 transition-opacity duration-1000">
+        <div class="absolute inset-0 bg-gradient-to-r from-[var(--bg-main)] via-transparent to-transparent"></div>
+        <div class="relative z-10 p-8 md:p-12">
+          <h1 class="huge-text font-display font-bold tracking-tight mb-8">
+            The Array.
+          </h1>
+          <p class="subtitle-text max-w-2xl">
+            We engineer digital ecosystems that drive growth and elevate your brand. From pixel-perfect web apps to impenetrable architectures.
+          </p>
+        </div>
       </section>
 
       <!-- Services List (Asymmetric + Image-Free) -->

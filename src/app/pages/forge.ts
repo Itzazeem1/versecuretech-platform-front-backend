@@ -279,11 +279,7 @@ export class ForgeComponent implements OnInit {
   public supabase = inject(SupabaseService);
   private sanitizer = inject(DomSanitizer);
   private http = inject(HttpClient);
-<<<<<<< HEAD
-  private supabase = inject(SupabaseService);
-=======
   private router = inject(Router);
->>>>>>> ddbbcba (Refactor Forge AI access, update Supabase service, and finalize email branding)
 
   ngOnInit() {
     // Restrict access

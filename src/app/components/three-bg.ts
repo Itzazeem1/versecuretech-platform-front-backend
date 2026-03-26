@@ -35,7 +35,7 @@ export class ThreeBackgroundComponent implements OnDestroy {
   private renderer!: THREE.WebGLRenderer;
   private material!: THREE.ShaderMaterial;
   private animationFrameId: number | null = null;
-  private clock = new THREE.Clock();
+  private startTime = Date.now();
 
   private mouseX = typeof window !== 'undefined' ? window.innerWidth / 2 : 0;
   private mouseY = typeof window !== 'undefined' ? window.innerHeight / 2 : 0;
@@ -193,7 +193,7 @@ export class ThreeBackgroundComponent implements OnDestroy {
     this.currentX += (this.mouseX - this.currentX) * 0.05;
     this.currentY += (this.mouseY - this.currentY) * 0.05;
 
-    const elapsedTime = this.clock.getElapsedTime();
+    const elapsedTime = (Date.now() - this.startTime) / 1000;
     this.material.uniforms['uTime'].value = elapsedTime;
     this.material.uniforms['uSpeed'].value = this.store.animationSpeed();
     
@@ -207,9 +207,11 @@ export class ThreeBackgroundComponent implements OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-    window.removeEventListener('resize', this.onWindowResize.bind(this));
-    window.removeEventListener('mousemove', this.onMouseMove.bind(this));
+    if (typeof window !== 'undefined') {
+      if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+      window.removeEventListener('resize', this.onWindowResize.bind(this));
+      window.removeEventListener('mousemove', this.onMouseMove.bind(this));
+    }
     
     if (this.renderer) {
       this.renderer.dispose();

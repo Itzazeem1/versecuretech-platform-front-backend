@@ -117,8 +117,6 @@ export class SupabaseService {
       console.log('[Supabase Auth] No session found');
       this.checkAdminStatus(null);
     }
-<<<<<<< HEAD
-=======
 
     // Listen for the popup sending us a postMessage after OAuth completes
     if (typeof window !== 'undefined') {
@@ -135,7 +133,6 @@ export class SupabaseService {
         }
       });
     }
->>>>>>> ddbbcba (Refactor Forge AI access, update Supabase service, and finalize email branding)
     
     // Listen for auth changes
     this.supabase.auth.onAuthStateChange((event, session) => {
