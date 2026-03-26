@@ -43,7 +43,7 @@ import gsap from 'gsap';
           <p class="mb-6">The materials appearing on VersecureTech's website could include technical, typographical, or photographic errors. VersecureTech does not warrant that any of the materials on its website are accurate, complete or current. VersecureTech may make changes to the materials contained on its website at any time without notice.</p>
           
           <h2 class="text-2xl font-display font-bold text-[var(--text-primary)] mt-12 mb-6">6. Governing Law</h2>
-          <p class="mb-6">These terms and conditions are governed by and construed in accordance with the laws and you irrevocably submit to the exclusive jurisdiction of the courts in that State or location.</p>
+          <p class="mb-6">These terms and conditions are governed by and construed in accordance with the laws of the State of California, United States, and you irrevocably submit to the exclusive jurisdiction of the courts located in San Francisco, California.</p>
         </div>
       </div>
     </main>

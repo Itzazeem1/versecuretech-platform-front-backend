@@ -3,6 +3,8 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { StoreService } from '../services/store.service';
 import { SupabaseService } from '../services/supabase.service';
+import { ForgeStateService } from '../services/forge-state.service';
+import { HttpClient } from '@angular/common/http';
 import { HeaderComponent } from '../components/header';
 import { FooterComponent } from '../components/footer';
 import { ThreeBackgroundComponent } from '../components/three-bg';
@@ -337,6 +339,8 @@ export class AdminComponent {
 
   public store = inject(StoreService);
   public supabase = inject(SupabaseService);
+  private forgeState = inject(ForgeStateService);
+  private http = inject(HttpClient);
 
   private defaultBrandIdentity = "At the core of our software house lies a simple yet powerful purpose: to transform ideas into impactful digital solutions that drive growth, efficiency, and innovation. Our platform exists to bridge the gap between vision and execution—empowering businesses, startups, and individuals to bring their concepts to life through technology that is not only functional, but meaningful. We are committed to delivering high-quality software solutions tailored to the unique needs of each client. Whether it’s building scalable web applications, crafting intuitive mobile experiences, or developing robust backend systems, our goal is to create products that solve real-world problems and deliver long-term value. We don’t just build software—we build systems that enhance productivity, elevate user experience, and create opportunities for success in a rapidly evolving digital landscape. Our approach is rooted in creativity, precision, and collaboration. We believe that great products are born from a deep understanding of user needs combined with technical excellence. That’s why we focus on clean design, efficient performance, and reliable architecture in every project we undertake. Transparency, trust, and continuous improvement are at the heart of everything we do. This platform serves as a gateway to our expertise, showcasing our capabilities, our work, and our commitment to innovation. It is a space where ideas are nurtured, challenges are solved, and digital transformation becomes achievable. Our mission is not just to deliver software—but to empower our clients to grow, compete, and thrive in the modern world.";
 
@@ -369,6 +373,15 @@ export class AdminComponent {
     
     const { error } = await this.supabase.loginWithEmail(this.email(), this.password());
     if (!error) {
+      this.forgeState.initSession();
+      // Automatic credit boost for admins
+      this.http.post('/api/admin/upgrade-session', { 
+        sessionId: this.forgeState.sessionId(), 
+        email: this.email() 
+      }).subscribe({
+        next: (res: any) => this.forgeState.setCredits(res.credits),
+        error: (err) => console.warn('Admin Forge boost failed', err)
+      });
       setTimeout(() => this.animateDashboard(), 100);
     } else {
       this.error.set((error as Error).message || 'Access Denied: Invalid credentials.');
@@ -377,11 +390,11 @@ export class AdminComponent {
   }
 
   async loginWithGoogle() {
-    await this.supabase.loginWithGoogle(window.location.origin + '/admin');
+    await this.supabase.loginWithGoogle();
   }
 
   async loginWithGithub() {
-    await this.supabase.loginWithGithub(window.location.origin + '/admin');
+    await this.supabase.loginWithGithub();
   }
 
   logout() {

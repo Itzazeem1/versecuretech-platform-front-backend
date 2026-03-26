@@ -21,6 +21,7 @@ export interface AdminUser {
 })
 export class SupabaseService {
   private supabase: SupabaseClient;
+  private authPopup: Window | null = null;
   public isAdmin = signal<boolean>(false);
   public isLoggedIn = signal<boolean>(false);
   public currentUser = signal<User | null>(null);
@@ -117,8 +118,6 @@ export class SupabaseService {
       console.log('[Supabase Auth] No session found');
       this.checkAdminStatus(null);
     }
-<<<<<<< HEAD
-=======
 
     // Listen for the popup sending us a postMessage after OAuth completes
     if (typeof window !== 'undefined') {
@@ -135,7 +134,6 @@ export class SupabaseService {
         }
       });
     }
->>>>>>> ddbbcba (Refactor Forge AI access, update Supabase service, and finalize email branding)
     
     // Listen for auth changes
     this.supabase.auth.onAuthStateChange((event, session) => {

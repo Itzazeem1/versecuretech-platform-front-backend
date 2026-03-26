@@ -29,7 +29,7 @@ const WORKS: Record<string, WorkData> = {
     client: 'Nexus Corp',
     category: 'Cyber Security',
     year: '2024',
-    description: 'A zero-trust environment implementation. We mapped all architectural weak points and reconstructed the traffic layers from the ground up, ensuring impenetrable infrastructure.'
+    description: 'We deployed a sophisticated defense architecture spanning Information Security Governance, Penetration Testing, and Malware Analysis. By leveraging frameworks like MITRE ATT&CK for proactive threat modeling, we utilized offensive security tools such as Nmap and Burp Suite to identify and neutralize attack vectors. Our reverse-engineering protocols successfully identified persistence mechanisms, ensuring a zero-breach environment post-deployment.'
   },
   'quantum-app': {
     id: 'quantum-app',
@@ -62,10 +62,12 @@ const WORKS: Record<string, WorkData> = {
             {{ work()?.title }}
           </h1>
           
-          <!-- Abstract Component Replacement for Images -->
-          <div class="w-full h-[30vh] md:h-[40vh] relative mb-20 overflow-hidden work-anim glass-panel rounded-[2rem] glow-hover border border-[var(--text-primary)]/5 flex items-center justify-center">
-             <div class="absolute inset-0 opacity-10 blur-[80px] bg-gradient-to-r from-[var(--accent-main)] to-transparent pointer-events-none"></div>
-             <p class="font-mono text-[var(--text-muted)] opacity-50 text-sm tracking-[0.5em] uppercase">Visual Abstraction. No Clutter.</p>
+          <!-- Project Hero Image -->
+          <div class="w-full h-[40vh] md:h-[60vh] relative mb-20 overflow-hidden work-anim glass-panel rounded-[2rem] glow-hover border border-[var(--text-primary)]/5 flex items-center justify-center">
+             <img [src]="'/assets/images/' + work()?.id + '.png'" 
+                  [alt]="work()?.title"
+                  class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700">
+             <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-main)] via-transparent to-transparent opacity-60"></div>
           </div>
           
           <!-- Details Grid -->

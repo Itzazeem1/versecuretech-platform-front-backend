@@ -27,33 +27,28 @@ import gsap from 'gsap';
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto pricing-cards opacity-0 translate-y-8">
           
-          <!-- Free Plan -->
+          <!-- Basic Plan -->
           <div class="glass-panel p-10 rounded-[2rem] border border-[var(--text-primary)]/10 flex flex-col relative overflow-hidden group hover:border-[var(--text-primary)]/30 transition-all duration-500">
             <div class="mb-8">
               <h3 class="text-2xl font-display font-medium mb-2">Basic</h3>
-              <p class="text-sm text-[var(--text-muted)]">For individuals exploring AI capabilities.</p>
+              <p class="text-sm text-[var(--text-muted)]">Perfect for exploring our public services.</p>
             </div>
             <div class="mb-8">
               <span class="text-5xl font-display font-medium">$0</span>
-              <span class="text-[var(--text-muted)]">/month</span>
             </div>
             
             <ul class="space-y-4 mb-10 flex-1">
               <li class="flex items-center gap-3 text-sm">
                 <span class="material-icons text-[16px] text-green-400">check_circle</span>
-                Access to Forge AI (Standard Model)
+                Public Service Access
               </li>
               <li class="flex items-center gap-3 text-sm">
                 <span class="material-icons text-[16px] text-green-400">check_circle</span>
-                50 Queries per day
-              </li>
-              <li class="flex items-center gap-3 text-sm">
-                <span class="material-icons text-[16px] text-green-400">check_circle</span>
-                Standard response speed
+                Standard Support
               </li>
               <li class="flex items-center gap-3 text-sm text-[var(--text-muted)]">
                 <span class="material-icons text-[16px]">remove_circle_outline</span>
-                No API Access
+                No Forge AI Access
               </li>
             </ul>
             
@@ -62,48 +57,44 @@ import gsap from 'gsap';
             </a>
           </div>
 
-          <!-- Pro Plan -->
-          <div class="glass-panel p-10 rounded-[2rem] border border-[var(--text-primary)]/20 relative overflow-hidden group transform md:-translate-y-4 shadow-[0_20px_40px_rgba(0,0,0,0.2)] opacity-80">
-            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--text-primary)]/50 to-transparent opacity-50"></div>
-            <div class="absolute top-4 right-4 bg-[var(--text-primary)]/10 text-[var(--text-primary)] text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-[var(--text-primary)]/20">
-              Coming Soon
+          <!-- Forge AI Plan (Featured) -->
+          <div class="glass-panel p-10 rounded-[2rem] border border-[var(--accent-main)] relative overflow-hidden group transform md:-translate-y-4 shadow-[0_20px_40px_rgba(var(--accent-main-rgb),0.2)]">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--accent-main)] to-transparent opacity-50"></div>
+            <div class="absolute top-4 right-4 bg-[var(--accent-main)]/10 text-[var(--accent-main)] text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-[var(--accent-main)]/20">
+              Most Popular
             </div>
             
             <div class="mb-8">
-              <h3 class="text-2xl font-display font-medium mb-2">Pro</h3>
-              <p class="text-sm text-[var(--text-muted)]">For professionals and small engineering teams.</p>
+              <h3 class="text-2xl font-display font-medium mb-2">Forge AI Bundle</h3>
+              <p class="text-sm text-[var(--text-muted)]">Next-gen AI engineering environment.</p>
             </div>
             <div class="mb-8">
-              <span class="text-5xl font-display font-medium">$29</span>
-              <span class="text-[var(--text-muted)]">/month</span>
+              <span class="text-5xl font-display font-medium">$9.99</span>
+              <span class="text-[var(--text-muted)]">/one-time</span>
             </div>
             
             <ul class="space-y-4 mb-10 flex-1">
               <li class="flex items-center gap-3 text-sm">
-                <span class="material-icons text-[16px] text-[var(--text-muted)]">check_circle</span>
-                Access to Forge AI (Advanced Model)
+                <span class="material-icons text-[16px] text-green-400">check_circle</span>
+                Lifetime Forge AI Access
               </li>
               <li class="flex items-center gap-3 text-sm">
-                <span class="material-icons text-[16px] text-[var(--text-muted)]">check_circle</span>
-                Unlimited Queries
+                <span class="material-icons text-[16px] text-green-400">check_circle</span>
+                Advanced AI Code Generation
               </li>
               <li class="flex items-center gap-3 text-sm">
-                <span class="material-icons text-[16px] text-[var(--text-muted)]">check_circle</span>
-                Priority response speed
+                <span class="material-icons text-[16px] text-green-400">check_circle</span>
+                Engineering Architecture Tools
               </li>
               <li class="flex items-center gap-3 text-sm">
-                <span class="material-icons text-[16px] text-[var(--text-muted)]">check_circle</span>
-                Code generation & analysis
-              </li>
-              <li class="flex items-center gap-3 text-sm">
-                <span class="material-icons text-[16px] text-[var(--text-muted)]">check_circle</span>
-                Early access to new features
+                <span class="material-icons text-[16px] text-green-400">check_circle</span>
+                Zero Monthly Subscription
               </li>
             </ul>
             
-            <button disabled class="w-full py-4 rounded-xl border border-[var(--text-primary)]/20 text-center font-bold text-xs uppercase tracking-widest bg-[var(--text-primary)]/5 text-[var(--text-muted)] cursor-not-allowed">
-              Coming Soon
-            </button>
+            <a routerLink="/login" class="w-full py-4 rounded-xl bg-[var(--text-primary)] text-[var(--bg-main)] text-center font-bold text-xs uppercase tracking-widest hover:scale-105 transition-transform inline-block">
+              Buy Lifetime Access
+            </a>
           </div>
 
           <!-- Enterprise Plan -->

@@ -62,6 +62,10 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/cookies-policy').then(m => m.CookiesPolicyComponent)
   },
   {
+    path: 'auth/callback',
+    loadComponent: () => import('./pages/auth-callback').then(m => m.AuthCallbackComponent)
+  },
+  {
     path: '**',
     redirectTo: ''
   }
