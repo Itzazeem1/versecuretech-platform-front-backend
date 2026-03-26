@@ -63,8 +63,7 @@ import gsap from 'gsap';
                         <span class="text-[10px] uppercase tracking-widest text-[var(--accent-main)] border border-[var(--accent-main)]/30 px-2 py-1 rounded-full bg-[var(--accent-main)]/10">Access Required</span>
                       </div>
                       <div class="flex gap-2">
-                        <button (click)="goToLogin()" class="flex-1 text-[10px] py-2 rounded-lg bg-[var(--text-primary)] text-[var(--bg-main)] font-bold uppercase tracking-widest hover:scale-105 transition-transform">Buy Access</button>
-                        <button (click)="router.navigate(['/contact'])" class="flex-1 text-[10px] py-2 rounded-lg border border-[var(--text-primary)]/20 text-[var(--text-muted)] font-bold uppercase tracking-widest hover:bg-[var(--text-primary)]/5 transition-colors">Contact Us</button>
+                        <button (click)="router.navigate(['/contact'])" class="flex-1 text-[10px] py-2 rounded-lg bg-[var(--text-primary)] text-[var(--bg-main)] font-bold uppercase tracking-widest hover:scale-105 transition-transform">Buy Access</button>
                       </div>
                     </div>
                   }
