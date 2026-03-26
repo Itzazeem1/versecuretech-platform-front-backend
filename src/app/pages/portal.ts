@@ -49,11 +49,25 @@ import gsap from 'gsap';
                 </div>
                 <h3 class="text-xl font-display font-medium mb-3">Forge AI</h3>
                 <p class="text-sm text-[var(--text-muted)]">Access our next-generation AI developer environment for code generation, UI building, and engineering architecture.</p>
+                
                 <div class="mt-6 pt-6 border-t border-[var(--text-primary)]/10 flex justify-between items-center">
-                  <button (click)="goToForge()" class="text-xs font-mono text-[var(--text-primary)] hover:text-[var(--accent-main)] uppercase tracking-widest transition-colors flex items-center gap-1">
-                    Launch AI <span class="material-icons text-[14px]">arrow_forward</span>
-                  </button>
-                  <span class="text-[10px] uppercase tracking-widest text-green-400 border border-green-400/30 px-2 py-1 rounded-full bg-green-400/10">Free Plan</span>
+                  @if (supabase.hasForgeAccess()) {
+                    <button (click)="goToForge()" class="text-xs font-mono text-[var(--text-primary)] hover:text-[var(--accent-main)] uppercase tracking-widest transition-colors flex items-center gap-1">
+                      Launch AI <span class="material-icons text-[14px]">arrow_forward</span>
+                    </button>
+                    <span class="text-[10px] uppercase tracking-widest text-green-400 border border-green-400/30 px-2 py-1 rounded-full bg-green-400/10">Authorized Access</span>
+                  } @else {
+                    <div class="flex flex-col gap-4 w-full">
+                      <div class="flex justify-between items-center">
+                        <span class="text-lg font-display font-medium text-[var(--text-primary)]">$9.99 <span class="text-[10px] text-[var(--text-muted)] uppercase tracking-tighter">One-time</span></span>
+                        <span class="text-[10px] uppercase tracking-widest text-[var(--accent-main)] border border-[var(--accent-main)]/30 px-2 py-1 rounded-full bg-[var(--accent-main)]/10">Access Required</span>
+                      </div>
+                      <div class="flex gap-2">
+                        <button (click)="goToLogin()" class="flex-1 text-[10px] py-2 rounded-lg bg-[var(--text-primary)] text-[var(--bg-main)] font-bold uppercase tracking-widest hover:scale-105 transition-transform">Buy Access</button>
+                        <button (click)="router.navigate(['/contact'])" class="flex-1 text-[10px] py-2 rounded-lg border border-[var(--text-primary)]/20 text-[var(--text-muted)] font-bold uppercase tracking-widest hover:bg-[var(--text-primary)]/5 transition-colors">Contact Us</button>
+                      </div>
+                    </div>
+                  }
                 </div>
               </div>
 
@@ -94,7 +108,7 @@ import gsap from 'gsap';
 })
 export class PortalComponent {
   public supabase = inject(SupabaseService);
-  private router = inject(Router);
+  public router = inject(Router);
 
   constructor() {
     afterNextRender(() => {

@@ -42,14 +42,6 @@ import gsap from 'gsap';
                 </a>
               </div>
               
-              <div class="info-block">
-                <h4 class="text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-4 font-semibold">Coordinates</h4>
-                <p class="text-xl md:text-2xl font-light leading-relaxed">
-                  Innovation Complex<br/>
-                  Sector 4<br/>
-                  San Francisco, CA
-                </p>
-              </div>
             </div>
           </div>
           

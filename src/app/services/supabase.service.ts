@@ -21,6 +21,7 @@ export interface AdminUser {
 })
 export class SupabaseService {
   private supabase: SupabaseClient;
+  private authPopup: Window | null = null;
   public isAdmin = signal<boolean>(false);
   public isLoggedIn = signal<boolean>(false);
   public currentUser = signal<User | null>(null);

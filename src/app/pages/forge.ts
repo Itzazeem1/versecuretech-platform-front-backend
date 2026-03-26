@@ -6,10 +6,7 @@ import { HttpClient } from '@angular/common/http';
 import { HeaderComponent } from '../components/header';
 import { ForgeStateService } from '../services/forge-state.service';
 import { SupabaseService } from '../services/supabase.service';
-<<<<<<< HEAD
-=======
 import { Router } from '@angular/router';
->>>>>>> ddbbcba (Refactor Forge AI access, update Supabase service, and finalize email branding)
 
 @Component({
   selector: 'app-forge',

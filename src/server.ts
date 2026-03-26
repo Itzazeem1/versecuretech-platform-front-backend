@@ -131,24 +131,29 @@ app.post('/api/contact', async (req, res) => {
     if (transporter) {
       // 1. Send email to Admins
       const adminInfo = await transporter.sendMail({
-        from: '"Versecure Contact" <noreply@versecuretech.com>',
+        from: '"Versecure Contact" <hello.versecure@gmail.com>',
         to: 'azeem.makhdum6@gmail.com, abbas585@gmail.com',
         subject: `New Lead: ${firstName} ${lastName} - ${service}`,
         html: `
-          <h2>New Contact Form Submission</h2>
-          <p><strong>Name:</strong> ${firstName} ${lastName}</p>
-          <p><strong>Email:</strong> ${email}</p>
-          <p><strong>Service Requested:</strong> ${service}</p>
-          <p><strong>Message:</strong></p>
-          <blockquote style="border-left: 4px solid #ccc; padding-left: 10px;">${message}</blockquote>
+          <h2 style="color: #6C8CFF;">New Contact Protocol Initialized</h2>
+          <p><strong>NAME:</strong> ${firstName} ${lastName}</p>
+          <p><strong>EMAIL:</strong> ${email}</p>
+          <p><strong>ORGANIZATION:</strong> ${req.body.company || 'N/A'}</p>
+          <p><strong>SERVICE:</strong> ${service}</p>
+          <p><strong>TIME:</strong> ${req.body.preferredTime || 'Immediate'}</p>
+          <p><strong>MESSAGE:</strong></p>
+          <blockquote style="border-left: 4px solid #6C8CFF; padding: 15px; background: #f9f9f9; font-style: italic;">
+            ${message}
+          </blockquote>
         `
       });
 
       // 2. Send decorative confirmation email to the User
       const userInfo = await transporter.sendMail({
-        from: '"Versecure Tech" <hello@versecuretech.com>',
+        from: '"Versecure Tech" <hello.versecure@gmail.com>',
         to: email,
-        subject: `We received your request, ${firstName}`,
+        bcc: 'azeem.makhdum6@gmail.com, abbas585@gmail.com',
+        subject: 'Connection Established | Versecure Tech',
         html: `
           <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #0a0a0a; color: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #333;">
             <div style="padding: 40px; text-align: center; background: linear-gradient(135deg, #1a1a1a 0%, #0a0a0a 100%); border-bottom: 1px solid #333;">
