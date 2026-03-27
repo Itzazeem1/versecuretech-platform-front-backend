@@ -3,6 +3,7 @@ import nodemailer from 'nodemailer';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import cors from 'cors';
+import { GoogleGenerativeAI } from "@google/generative-ai";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -123,33 +124,23 @@ app.post('/api/forge', async (req, res) => {
   }
 
   try {
-    console.log("AI Proxy: Fetching from Google...");
-    let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ contents })
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    
+    console.log("AI Proxy: Generating content via SDK...");
+    const result = await model.generateContent({ contents });
+    const response = await result.response;
+    const text = response.text();
+    
+    // Format the response to match what the frontend expects (raw Gemini structure)
+    res.json({
+        candidates: [{
+            content: {
+                parts: [{ text }],
+                role: 'model'
+            }
+        }]
     });
-
-    let data = await response.json();
-    
-    // Fallback if 1.5 Flash is not found
-    if (response.status === 404) {
-        console.warn("AI Proxy: 1.5 Flash not found, falling back to gemini-pro...");
-        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ contents })
-        });
-        data = await response.json();
-    }
-
-    console.log("AI Proxy: Received Response (Status: " + response.status + ")");
-    
-    if (!response.ok) {
-        console.error("Google API Error Data:", JSON.stringify(data));
-    }
-    
-    res.json(data);
   } catch (error) {
     console.error("AI Proxy Critical Error:", error);
     res.status(500).json({ error: "AI Service Unavailable" });
