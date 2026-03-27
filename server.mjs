@@ -3,11 +3,6 @@ import nodemailer from 'nodemailer';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import cors from 'cors';
-import fetch from 'node-fetch'; // Polyfill for Node < 18
-
-if (!globalThis.fetch) {
-    globalThis.fetch = fetch;
-}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -127,6 +122,7 @@ app.post('/api/forge', async (req, res) => {
     return res.status(500).json({ error: "AI Service Not Configured. Please set GEMINI_API_KEY in Hostinger Environment Variables." });
   }
 
+  try {
     console.log("AI Proxy: Fetching from Google...");
     let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: "POST",
