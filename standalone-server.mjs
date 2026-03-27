@@ -86,11 +86,12 @@ app.post('/api/contact', async (req, res) => {
 });
 
 // Serve the static Angular frontend
-app.use(express.static(__dirname));
+const browserPath = join(__dirname, 'dist', 'app', 'browser');
+app.use(express.static(browserPath));
 
-// Send all other requests to index.html so Angular's router takes over (e.g., /portal, /pricing)
+// Send all other requests to index.html so Angular's router takes over
 app.get('*', (req, res) => {
-  res.sendFile(join(__dirname, 'index.html'));
+  res.sendFile(join(browserPath, 'index.html'));
 });
 
 const PORT = process.env.PORT || 4000;
