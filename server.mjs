@@ -3,6 +3,11 @@ import nodemailer from 'nodemailer';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import cors from 'cors';
+import fetch from 'node-fetch'; // Polyfill for Node < 18
+
+if (!globalThis.fetch) {
+    globalThis.fetch = fetch;
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
