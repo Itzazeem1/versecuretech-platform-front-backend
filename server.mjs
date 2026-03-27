@@ -3,7 +3,7 @@ import nodemailer from 'nodemailer';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import cors from 'cors';
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -124,26 +124,31 @@ app.post('/api/forge', async (req, res) => {
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const ai = new GoogleGenAI({ apiKey });
     
-    console.log("AI Proxy: Generating content via SDK...");
-    const result = await model.generateContent({ contents });
-    const response = await result.response;
-    const text = response.text();
+    // Extract the user text from the contents array
+    const userText = contents
+      ?.flatMap((c) => c.parts)
+      ?.map((p) => p.text)
+      ?.join('\n') || '';
     
-    // Format the response to match what the frontend expects (raw Gemini structure)
+    console.log("AI Proxy: Generating via @google/genai SDK...");
+    const response = await ai.models.generateContent({
+      model: "gemini-2.0-flash",
+      contents: userText,
+    });
+
+    const text = response.text;
+    console.log("AI Proxy: Success.");
+    
     res.json({
-        candidates: [{
-            content: {
-                parts: [{ text }],
-                role: 'model'
-            }
-        }]
+      candidates: [{
+        content: { parts: [{ text }], role: 'model' }
+      }]
     });
   } catch (error) {
-    console.error("AI Proxy Critical Error:", error);
-    res.status(500).json({ error: "AI Service Unavailable" });
+    console.error("AI Proxy Critical Error:", error.message || error);
+    res.status(500).json({ error: error.message || "AI Service Unavailable" });
   }
 });
 
