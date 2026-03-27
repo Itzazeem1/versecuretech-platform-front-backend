@@ -425,11 +425,12 @@ export class ForgeComponent implements OnInit {
     this.error.set('');
 
     try {
-      // Call our secure backend proxy (Zero-Leak Strategy)
       const response = await fetch('/api/forge', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contents: fullPrompt })
+        body: JSON.stringify({ 
+          contents: [{ parts: [{ text: fullPrompt }] }] 
+        })
       });
 
       if (!response.ok) throw new Error('AI Service failed');
