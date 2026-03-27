@@ -90,7 +90,7 @@ const browserPath = join(__dirname, 'dist', 'app', 'browser');
 app.use(express.static(browserPath));
 
 // Send all other requests to index.html so Angular's router takes over
-app.get('*', (req, res) => {
+app.get('/(.*)', (req, res) => {
   res.sendFile(join(browserPath, 'index.html'));
 });
 
