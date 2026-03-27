@@ -436,7 +436,7 @@ export class ForgeComponent implements OnInit {
       if (!response.ok) throw new Error('AI Service failed');
       const data = await response.json();
       
-      if (data.candidates && data.candidates[0].content.parts[0].text) {
+      if (data.candidates && data.candidates[0].content?.parts?.[0]?.text) {
         const textOutput = data.candidates[0].content.parts[0].text;
         
         // Extract files from JSON if present
@@ -446,7 +446,7 @@ export class ForgeComponent implements OnInit {
             const projectData = JSON.parse(jsonMatch[0]);
             if (projectData.files) {
               this.state.setFiles(projectData.files);
-              this.state.addMessage({ role: 'model', text: projectData.message || "Project compiled successfully." });
+              this.state.addMessage({ role: 'model', text: projectData.message || "Project architecture compiled." });
               this.updatePreview();
               this.state.setViewMode('preview');
             }
@@ -456,6 +456,11 @@ export class ForgeComponent implements OnInit {
         } else {
           this.state.addMessage({ role: 'model', text: textOutput });
         }
+      } else if (data.error) {
+          throw new Error(data.error.message || 'AI Engine rejected request.');
+      } else {
+          console.error('Unexpected AI Structure:', data);
+          this.state.addMessage({ role: 'model', text: "Compilation stalled. No output received from the engine core." });
       }
 
       this.loading.set(false);
