@@ -9,6 +9,7 @@
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
+    "start-production": "node standalone-server.mjs",
     "serve:ssr:app": "node dist/app/server/server.mjs"
   },
   "private": true,

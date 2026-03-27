@@ -204,6 +204,73 @@ export class SupabaseService {
     }
   }
 
+  // Save Contact Submission (Serverless)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  async saveContact(payload: any): Promise<boolean> {
+    const { error } = await this.supabase.from('contacts').insert({
+      first_name: payload.firstName,
+      last_name: payload.lastName,
+      email: payload.email,
+      service: payload.service,
+      company: payload.company,
+      preferred_time: payload.preferredTime,
+      message: payload.message,
+      created_at: new Date().toISOString()
+    });
+    if (error) {
+       console.error('Supabase contact insert failed:', error);
+       alert('Supabase Error: ' + error.message);
+    } else {
+       // Send Custom Branded Email via our new lightweight Node Backend!
+       try {
+         await fetch("/api/contact", {
+            method: "POST",
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({
+                firstName: payload.firstName,
+                lastName: payload.lastName,
+                email: payload.email,
+                service: payload.service,
+                company: payload.company,
+                message: payload.message
+            })
+         });
+       } catch (e) {
+         console.error('Email forward failed, but DB saved.', e);
+       }
+    }
+    return !error;
+  }
+
+  // Credit Management (Serverless)
+  async getForgeCredits(): Promise<number> {
+    if (!this.currentUser()) return 100; // Default for guests
+    
+    const { data, error } = await this.supabase
+      .from('profiles')
+      .select('credits')
+      .eq('id', this.currentUser()!.id)
+      .single();
+    
+    if (error || !data) return 100;
+    return data.credits;
+  }
+
+  async deductForgeCredits(amount: number): Promise<boolean> {
+    if (!this.currentUser()) return true; // Don't persist for guests
+    
+    const current = await this.getForgeCredits();
+    const { error } = await this.supabase
+      .from('profiles')
+      .update({ credits: Math.max(0, current - amount) })
+      .eq('id', this.currentUser()!.id);
+    
+    return !error;
+  }
+
   // Subscribe to changes (Real-time sync)
   subscribeToContent(callback: () => void) {
     return this.supabase

@@ -4,13 +4,16 @@ import { HeaderComponent } from '../components/header';
 import { FooterComponent } from '../components/footer';
 import { ThreeBackgroundComponent } from '../components/three-bg';
 import { StoreService } from '../services/store.service';
+import { SupabaseService } from '../services/supabase.service';
 import gsap from 'gsap';
+
+import { FormsModule } from '@angular/forms';
 
 @Component({
   selector: 'app-contact',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, HeaderComponent, FooterComponent, ThreeBackgroundComponent],
+  imports: [CommonModule, HeaderComponent, FooterComponent, ThreeBackgroundComponent, FormsModule],
   template: `
     <app-three-bg></app-three-bg>
     <app-header></app-header>
@@ -135,6 +138,7 @@ export class ContactComponent implements OnDestroy {
 
   private ctx!: gsap.Context;
   public store = inject(StoreService);
+  public supabase = inject(SupabaseService);
 
   constructor() {
     afterNextRender(async () => {
@@ -212,41 +216,30 @@ export class ContactComponent implements OnDestroy {
     if (this.ctx) this.ctx.revert();
   }
 
+
+
   async submitContact(event: Event) {
     event.preventDefault();
     const form = event.target as HTMLFormElement;
     
     this.submitStatus.set('loading');
     
-    try {
-      const firstName = (form.elements.namedItem('firstName') as HTMLInputElement).value;
-      const lastName = (form.elements.namedItem('lastName') as HTMLInputElement).value;
-      const email = (form.elements.namedItem('email') as HTMLInputElement).value;
-      const service = (form.elements.namedItem('service') as HTMLSelectElement).value;
-      const company = (form.elements.namedItem('company') as HTMLInputElement).value;
-      const preferredTime = (form.elements.namedItem('preferredTime') as HTMLInputElement).value;
-      const message = (form.elements.namedItem('message') as HTMLTextAreaElement).value;
+    const formData = {
+      firstName: (form.elements.namedItem('firstName') as HTMLInputElement).value,
+      lastName: (form.elements.namedItem('lastName') as HTMLInputElement).value,
+      email: (form.elements.namedItem('email') as HTMLInputElement).value,
+      service: (form.elements.namedItem('service') as HTMLSelectElement).value,
+      company: (form.elements.namedItem('company') as HTMLInputElement).value,
+      preferredTime: (form.elements.namedItem('preferredTime') as HTMLInputElement).value,
+      message: (form.elements.namedItem('message') as HTMLTextAreaElement).value
+    };
 
-      const response = await fetch('/api/contact', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          service,
-          company,
-          preferredTime,
-          message
-        })
-      });
-
-      if (!response.ok) throw new Error('Backend transmission failed');
-
+    const success = await this.supabase.saveContact(formData);
+    
+    if (success) {
       this.submitStatus.set('success');
       form.reset();
-    } catch (error) {
-      console.error('Contact Error:', error);
+    } else {
       this.submitStatus.set('error');
     }
   }
