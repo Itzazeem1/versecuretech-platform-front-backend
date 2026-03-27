@@ -1,12 +1,14 @@
-import { Component, signal, inject, OnInit } from '@angular/core';
+import { Component, signal, inject, OnInit, ElementRef, viewChild, afterNextRender } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
+import { GoogleGenAI, Type } from '@google/genai';
 import { HeaderComponent } from '../components/header';
 import { ForgeStateService } from '../services/forge-state.service';
 import { SupabaseService } from '../services/supabase.service';
 import { Router } from '@angular/router';
+import { environment } from '../../environments/environment';
 
 @Component({
   selector: 'app-forge',
@@ -74,7 +76,7 @@ import { Router } from '@angular/router';
             <div class="mb-3">
               <div class="flex items-center gap-2 mb-2">
                 <button 
-                  (click)="fileInput?.click()"
+                  (click)="triggerFileInput()"
                   class="text-[10px] font-mono uppercase text-[#888] hover:text-white transition-colors">
                   📎 Attach Files
                 </button>
@@ -85,7 +87,6 @@ import { Router } from '@angular/router';
                   multiple
                   accept="image/*,.js,.ts,.jsx,.tsx,.css,.scss,.html,.json,.xml,.yaml,.yml,.md,.txt,.py,.java,.cpp,.c,.h,.php,.rb,.go,.rs,.swift,.kt,.sql,.sh,.bat,.ps1"
                   class="hidden">
-                >
                 @if (uploadedFiles().length > 0) {
                   <span class="text-[10px] font-mono text-[#666]">
                     {{ uploadedFiles().length }} file(s) selected
@@ -97,142 +98,112 @@ import { Router } from '@angular/router';
                   </button>
                 }
               </div>
-              @if (uploadedFiles().length > 0) {
-                <div class="flex flex-wrap gap-2 mb-2">
-                  @for (file of uploadedFiles(); track file.name) {
-                    <div class="flex items-center gap-1 bg-[#1a1a1a] px-2 py-1 rounded text-[10px] font-mono">
-                      <span class="text-[#888]">{{ file.type.startsWith('image/') ? '🖼️' : '📄' }}</span>
-                      <span class="text-[#ccc] truncate max-w-[100px]">{{ file.name }}</span>
-                      <span class="text-[#666]">({{ formatFileSize(file.size) }})</span>
-                      <button 
-                        (click)="removeFile(file)"
-                        class="text-[#ff6b6b] hover:text-[#ff8787] ml-1">
-                        ✕
-                      </button>
+            </div>
+
+            <div class="relative">
+              <textarea 
+                [(ngModel)]="prompt" 
+                (keydown)="handleEnter($event)"
+                placeholder="Describe what you want to build..." 
+                class="w-full bg-[#111] border border-[#222] rounded-lg p-3 pt-4 pb-12 text-[14px] text-white focus:outline-none focus:border-white/30 resize-none min-h-[100px] scrollbar-none transition-all duration-300 placeholder:text-[#555]"
+                [disabled]="loading()">
+              </textarea>
+              <div class="absolute bottom-3 right-3 flex items-center gap-2">
+                <button 
+                  (click)="generateWebsite()" 
+                  [disabled]="loading() || (!prompt().trim() && uploadedFiles().length === 0)"
+                  class="bg-white text-black px-4 py-1.5 rounded-full text-[12px] font-bold hover:bg-[#88c4ff] disabled:opacity-30 disabled:hover:bg-white transition-all duration-300 tracking-tighter shadow-[0_0_15px_rgba(255,255,255,0.1)] active:scale-95 disabled:active:scale-100 uppercase">
+                  {{ loading() ? 'Compiling...' : 'Forge' }}
+                </button>
+              </div>
+            </div>
+            <div class="mt-2 text-[10px] font-mono text-[#444] text-center uppercase tracking-widest">
+              Gemini Flash 1.5 // Multi-File Architecture
+            </div>
+          </div>
+        </aside>
+
+        <!-- Main Content: Editor & Preview -->
+        <main class="flex-1 flex flex-col bg-[#050505] relative overflow-hidden">
+          <header class="h-12 flex items-center justify-between px-6 border-b border-[#222] bg-[#0f0f0f]/80 backdrop-blur-md">
+            <div class="flex items-center gap-6">
+              <div class="flex items-center gap-1">
+                <button 
+                  (click)="state.setViewMode('code')"
+                  class="px-4 h-12 flex items-center border-b-2 transition-all duration-300 text-[11px] font-mono uppercase tracking-widest"
+                  [ngClass]="state.viewMode() === 'code' ? 'border-white text-white' : 'border-transparent text-[#666] hover:text-[#bbb]'">
+                  Source_Code
+                </button>
+                <button 
+                  (click)="state.setViewMode('preview')"
+                  class="px-4 h-12 flex items-center border-b-2 transition-all duration-300 text-[11px] font-mono uppercase tracking-widest"
+                  [ngClass]="state.viewMode() === 'preview' ? 'border-white text-white' : 'border-transparent text-[#666] hover:text-[#bbb]'">
+                  Live_Preview
+                </button>
+              </div>
+            </div>
+            
+            <div class="flex items-center gap-4">
+              @if (saving()) {
+                 <div class="text-[10px] font-mono text-[#888] animate-pulse tracking-widest">PUBLISHING...</div>
+              }
+              @if (successMessage()) {
+                 <div class="text-[10px] font-mono text-[#4ade80] tracking-widest">{{ successMessage() }}</div>
+              }
+              <button 
+                (click)="saveToCloud()"
+                [disabled]="saving()"
+                class="text-[11px] font-mono text-white/50 hover:text-white transition-colors flex items-center gap-2 uppercase tracking-wide">
+                <span>☁️ Sync_Cloud</span>
+              </button>
+              <button 
+                (click)="copyCode()"
+                class="text-[11px] font-mono text-white/50 hover:text-white transition-colors flex items-center gap-2 uppercase tracking-wide">
+                <span>{{ copyText() }}</span>
+              </button>
+            </div>
+          </header>
+
+          <div class="flex-1 relative">
+            @if (state.viewMode() === 'code') {
+              <!-- Explorer Sidebar -->
+              <div class="absolute left-0 top-0 bottom-0 w-64 bg-[#0a0a0a] border-r border-[#222] flex flex-col z-20 transition-transform duration-300"
+                   [ngClass]="isExplorerOpen() ? 'translate-x-0' : '-translate-x-full'">
+                <div class="p-4 border-b border-[#222] flex items-center justify-between">
+                  <span class="text-[11px] font-mono uppercase text-[#888] tracking-widest">Project Files</span>
+                  <button (click)="createNewFile()" class="text-[#888] hover:text-white text-lg">+</button>
+                </div>
+                <div class="flex-1 overflow-y-auto">
+                  @for (file of state.files(); track file.path) {
+                    <div 
+                      (click)="state.selectFile(file)"
+                      class="flex items-center justify-between px-4 py-2 hover:bg-white/5 cursor-pointer group"
+                      [ngClass]="state.selectedFile()?.path === file.path ? 'bg-white/10 text-white' : 'text-[#888]'">
+                      <div class="flex items-center gap-2">
+                        <span class="text-[12px] font-mono">{{ file.path }}</span>
+                      </div>
+                      <button (click)="state.removeFile(file.path); $event.stopPropagation()" 
+                              class="opacity-0 group-hover:opacity-100 text-[#ff6b6b] hover:scale-125 transition-all">✕</button>
                     </div>
                   }
                 </div>
-              }
-            </div>
-            
-            <div class="relative flex flex-col bg-[#0f0f0f] border border-[#333] focus-within:border-[#666] transition-colors">
-              <textarea 
-                [(ngModel)]="prompt" 
-                (keydown.enter)="handleEnter($event)"
-                rows="3" 
-                class="w-full bg-transparent p-3 text-[13px] text-[#ededed] placeholder-[#555] focus:outline-none resize-none font-mono"
-                placeholder="> enter command or upload files above..."></textarea>
-              <div class="flex justify-between items-center px-3 py-2 border-t border-[#222] bg-[#0a0a0a]">
-                <div class="flex gap-3 text-[10px] font-mono text-[#666]">
-                  <span>PRO: 10CR</span>
-                  <span>FLASH: 2CR</span>
-                </div>
-                <button 
-                  (click)="generateWebsite()" 
-                  [disabled]="loading() || !prompt().trim()"
-                  class="text-[10px] font-mono uppercase tracking-widest text-white hover:text-[#aaa] transition-colors disabled:opacity-30">
-                  Execute ↵
-                </button>
               </div>
-            </div>
-          </div>
-        </aside>
-
-        <!-- Middle Panel: File Explorer -->
-        <aside class="w-full md:w-[240px] flex-shrink-0 flex flex-col border-r border-[#222] bg-[#0a0a0a] transition-transform duration-300 absolute md:relative h-full z-20"
-               [ngClass]="isExplorerOpen() ? 'translate-x-0' : '-translate-x-full md:translate-x-0'">
-          <div class="h-12 flex items-center justify-between px-4 border-b border-[#222]">
-            <span class="text-[10px] font-mono tracking-widest text-[#888] uppercase">Workspace</span>
-            <div class="flex items-center gap-2">
-              <button (click)="createNewFile()" class="text-[#888] hover:text-white text-[10px] font-mono uppercase" title="New File">+ File</button>
-              <button (click)="downloadZip()" class="text-[#888] hover:text-white text-[10px] font-mono uppercase" title="Download ZIP">↓ ZIP</button>
-              <button class="md:hidden text-[#888] hover:text-white ml-2" (click)="isExplorerOpen.set(false)">✕</button>
-            </div>
-          </div>
-          <div class="flex-1 overflow-y-auto py-2">
-            @if (state.files().length === 0) {
-              <div class="text-[11px] font-mono text-[#555] px-4 py-2">
-                [ empty directory ]
-              </div>
-            }
-            <div class="flex flex-col">
-              @for (file of state.files(); track file.path) {
-                <button 
-                  (click)="state.selectFile(file); state.setViewMode('code')"
-                  class="w-full text-left px-4 py-1.5 text-[12px] font-mono flex items-center gap-2 hover:bg-[#111] transition-colors"
-                  [ngClass]="state.selectedFile()?.path === file.path && state.viewMode() === 'code' ? 'bg-[#1a1a1a] text-white border-l-2 border-white' : 'text-[#888] border-l-2 border-transparent'">
-                  <span class="truncate">{{ file.path }}</span>
-                </button>
-              }
-            </div>
-          </div>
-          
-          <!-- Sync to Cloud Button -->
-          <div class="p-4 border-t border-[#222] bg-[#0f0f0f]">
-            <button 
-              (click)="saveToCloud()" 
-              [disabled]="state.files().length === 0 || saving()"
-              class="w-full py-2 flex items-center justify-center gap-2 text-[10px] font-mono uppercase tracking-widest transition-colors border border-[#333] hover:border-[#666] disabled:opacity-30 disabled:hover:border-[#333]"
-              [ngClass]="saving() ? 'text-[#888]' : 'text-white'">
-              @if (saving()) {
-                <span class="animate-pulse">[ SYNCING... ]</span>
-              } @else {
-                <span>[ SYNC TO CLOUD ]</span>
-              }
-            </button>
-            @if (successMessage()) {
-              <div class="mt-2 text-[10px] font-mono text-[#4ade80] text-center">
-                {{ successMessage() }}
-              </div>
-            }
-          </div>
-        </aside>
-
-        <!-- Right Panel: Editor / Preview -->
-        <main class="flex-1 flex flex-col min-w-0 bg-[#0a0a0a] relative">
-          <!-- Mobile Header Toggles -->
-          <div class="md:hidden h-12 flex items-center justify-between px-4 border-b border-[#222] bg-[#0f0f0f]">
-            <button (click)="isChatOpen.set(true)" class="text-[11px] font-mono uppercase text-[#888] hover:text-white">Terminal</button>
-            <span class="text-[11px] font-mono text-white">{{ state.selectedFile()?.path || 'No File' }}</span>
-            <button (click)="isExplorerOpen.set(true)" class="text-[11px] font-mono uppercase text-[#888] hover:text-white">Files</button>
-          </div>
-
-          <!-- Tabs -->
-          <div class="h-12 flex border-b border-[#222] bg-[#0f0f0f] justify-between items-center pr-4">
-            <div class="flex h-full">
-              @if (state.selectedFile()) {
-                <button 
-                  (click)="state.setViewMode('code')"
-                  class="px-6 flex items-center justify-center border-r border-[#222] transition-colors min-w-[120px]"
-                  [ngClass]="state.viewMode() === 'code' ? 'bg-[#0a0a0a] text-white' : 'text-[#666] hover:text-[#aaa]'">
-                  <span class="text-[11px] font-mono uppercase tracking-wider">Source</span>
-                </button>
-              }
+              
+              <!-- Explorer Toggle -->
               <button 
-                (click)="state.setViewMode('preview'); updatePreview()"
-                class="px-6 flex items-center justify-center border-r border-[#222] transition-colors min-w-[120px]"
-                [ngClass]="state.viewMode() === 'preview' ? 'bg-[#0a0a0a] text-white' : 'text-[#666] hover:text-[#aaa]'">
-                <span class="text-[11px] font-mono uppercase tracking-wider">Preview</span>
+                (click)="isExplorerOpen.set(!isExplorerOpen())"
+                class="absolute left-0 top-1/2 -translate-y-1/2 bg-[#222] text-[#888] p-1 rounded-r-md z-30 hover:text-white transition-colors">
+                {{ isExplorerOpen() ? '◀' : '▶' }}
               </button>
-            </div>
-            @if (state.viewMode() === 'code' && state.selectedFile()) {
-              <button (click)="copyCode()" class="text-[10px] font-mono uppercase tracking-widest text-[#888] hover:text-white transition-colors border border-[#333] px-3 py-1">
-                {{ copyText() }}
-              </button>
-            }
-          </div>
-          
-          <!-- Content Area -->
-          <div class="flex-1 relative bg-[#0a0a0a]">
-            @if (state.viewMode() === 'code') {
+
               @if (state.selectedFile()) {
-                <div class="absolute inset-0 flex flex-col">
+                <div class="absolute inset-0 p-6 overflow-hidden">
                   <textarea 
                     [ngModel]="state.selectedFile()?.content"
                     (ngModelChange)="onFileContentChange($event)"
                     spellcheck="false"
-                    class="flex-1 w-full bg-transparent p-6 text-[13px] font-mono leading-relaxed text-[#ccc] focus:outline-none resize-none scrollbar-thin scrollbar-thumb-[#333] whitespace-pre"
-                  ></textarea>
+                    class="w-full h-full bg-transparent text-[#ededed] font-mono text-[13px] leading-relaxed border-none focus:outline-none resize-none scrollbar-thin scrollbar-thumb-[#222] selection:bg-white/10">
+                  </textarea>
                 </div>
               } @else {
                 <div class="absolute inset-0 flex items-center justify-center text-[#444] font-mono text-[11px] uppercase tracking-widest">
@@ -270,13 +241,22 @@ export class ForgeComponent implements OnInit {
   isExplorerOpen = signal(false);
   copyText = signal('Copy');
   uploadedFiles = signal<File[]>([]);
-  fileInput: HTMLInputElement | null = null;
+  
+  fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
   
   state = inject(ForgeStateService);
   public supabase = inject(SupabaseService);
   private sanitizer = inject(DomSanitizer);
   private http = inject(HttpClient);
+
+
   private router = inject(Router);
+
+  constructor() {
+    afterNextRender(async () => {
+      // Logic for client-side only can go here if needed
+    });
+  }
 
   ngOnInit() {
     // Restrict access
@@ -287,19 +267,24 @@ export class ForgeComponent implements OnInit {
 
     this.state.initSession();
 
-    // Fetch credits securely from backend
-    this.http.get<{credits: number}>(`/api/forge/credits?sessionId=${this.state.sessionId()}`)
-      .subscribe({
-        next: (res) => this.state.setCredits(res.credits),
-        error: (err) => console.error('Failed to load credits', err)
-      });
+    // Fetch credits securely from Supabase (Serverless)
+    this.supabase.getForgeCredits().then(credits => {
+      this.state.setCredits(credits);
+    });
+  }
+
+  triggerFileInput() {
+    this.fileInput()?.nativeElement.click();
   }
 
   handleEnter(event: Event) {
     const e = event as KeyboardEvent;
-    if (!e.shiftKey) {
+    // Only intercept when the user actually hits "Enter" (and not holding Shift for new line)
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      this.generateWebsite();
+      if (!this.loading() && (this.prompt().trim() || this.uploadedFiles().length > 0)) {
+        this.generateWebsite();
+      }
     }
   }
 
@@ -441,69 +426,83 @@ export class ForgeComponent implements OnInit {
     this.error.set('');
 
     try {
-      const customKey = localStorage.getItem('custom_gemini_key');
+      const apiKey = environment.geminiApiKey || localStorage.getItem('custom_gemini_key');
       
-      const formData = new FormData();
-      formData.append('sessionId', this.state.sessionId());
-      formData.append('prompt', fullPrompt);
-      
-      if (customKey) {
-        formData.append('apiKey', customKey);
+      if (!apiKey || apiKey === '${GEMINI_API_KEY}') {
+        throw new Error('Gemini API key not found. Please ensure it is set in your environment.');
       }
+
+      const ai = new GoogleGenAI({ apiKey });
       
-      // Add uploaded files to FormData
-      for (const file of this.uploadedFiles()) {
-        formData.append('files', file);
-      }
-      
-      this.http.post<{success: boolean, text: string, remainingCredits: number, usedModel: string, error?: string}>('/api/forge/generate', formData).subscribe({
-        next: (response) => {
-          this.loading.set(false);
-          
-          if (!response.success) {
-            this.error.set(response.error || 'Failed to generate website.');
-            return;
-          }
+      const systemInstruction = `You are Forge AI, an advanced AI assistant and expert frontend developer.
+Your behavior depends on the user's prompt:
+1. If the user is just chatting, respond verbally. DO NOT generate code files.
+2. If the user explicitly asks to build/create/generate a web app, you MUST generate a complete project.
 
-          this.state.setCredits(response.remainingCredits);
+WHEN GENERATING CODE:
+- For HTML files, include Tailwind CSS: <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+- Output a JSON object with a "files" property (array of {path, content}) and an optional "message".`;
 
-          let jsonStr = response.text.trim();
-          if (jsonStr.startsWith('```json')) {
-            jsonStr = jsonStr.replace(/^```json\n/, '').replace(/\n```$/, '');
-          } else if (jsonStr.startsWith('```')) {
-            jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
-          }
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            if (parsed) {
-              if (parsed.files && Array.isArray(parsed.files) && parsed.files.length > 0) {
-                this.state.setFiles(parsed.files);
-                this.updatePreview();
-                this.state.setViewMode('preview');
-                
-                const msgText = parsed.message || `I've generated the project files using Gemini ${response.usedModel}. You can view the code in the explorer and check the live preview.`;
-                this.state.addMessage({ role: 'model', text: msgText });
-              } else if (parsed.message) {
-                this.state.addMessage({ role: 'model', text: parsed.message });
-              } else {
-                 throw new Error('Invalid JSON structure returned by AI.');
+      const result = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: fullPrompt,
+        config: {
+          systemInstruction: systemInstruction,
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              message: { type: Type.STRING },
+              files: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    path: { type: Type.STRING },
+                    content: { type: Type.STRING }
+                  },
+                  required: ["path", "content"]
+                }
               }
-            } else {
-              throw new Error('Invalid JSON structure returned by AI.');
             }
-          } catch (parseError: unknown) {
-            console.error('Failed to parse AI response:', response.text, parseError);
-            this.error.set('Failed to parse the generated code. Please try again.');
-            this.state.addMessage({ role: 'model', text: 'Sorry, I encountered an error formatting the files. Please try again.' });
           }
-        },
-        error: (err) => {
-          this.loading.set(false);
-          console.error('Generation error:', err);
-          this.error.set(err.error?.error || 'Failed to generate website. Please try again.');
         }
       });
+
+      const text = result.text || '';
+
+      this.loading.set(false);
+      
+      // Deduct credits locally (and sync to Supabase)
+      this.state.deductCredits(2);
+      this.supabase.deductForgeCredits(2);
+
+      let jsonStr = text.trim();
+      if (jsonStr.startsWith('```json')) {
+        jsonStr = jsonStr.replace(/^```json\n/, '').replace(/\n```$/, '');
+      } else if (jsonStr.startsWith('```')) {
+        jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
+      }
+
+      try {
+        const parsed = JSON.parse(jsonStr);
+        if (parsed) {
+          if (parsed.files && Array.isArray(parsed.files) && parsed.files.length > 0) {
+            this.state.setFiles(parsed.files);
+            this.updatePreview();
+            this.state.setViewMode('preview');
+            
+            const msgText = parsed.message || `I've generated the project files. You can view the code in the explorer and check the live preview.`;
+            this.state.addMessage({ role: 'model', text: msgText });
+          } else if (parsed.message) {
+            this.state.addMessage({ role: 'model', text: parsed.message });
+          }
+        }
+      } catch (parseError: unknown) {
+        console.error('Failed to parse AI response:', text, parseError);
+        this.error.set('Failed to parse the generated code. Please try again.');
+        this.state.addMessage({ role: 'model', text: 'Sorry, I encountered an error formatting the files. Please try again.' });
+      }
       
     } catch (err: unknown) {
       this.loading.set(false);
