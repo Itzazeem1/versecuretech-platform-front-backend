@@ -121,22 +121,30 @@ app.post('/api/forge', async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY; 
   const contents = req.body.contents;
 
+  console.log("AI Proxy: Received Request");
   if (!apiKey) {
     console.error("AI Proxy Error: GEMINI_API_KEY is missing from environment variables.");
-    return res.status(500).json({ error: "AI Service Not Configured. Please set GEMINI_API_KEY as an Environment Variable in Hostinger." });
+    return res.status(500).json({ error: "AI Service Not Configured. Please set GEMINI_API_KEY in Hostinger Environment Variables." });
   }
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
+    console.log("AI Proxy: Fetching from Google...");
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents })
     });
 
     const data = await response.json();
+    console.log("AI Proxy: Received Response from Google", response.status);
+    
+    if (!response.ok) {
+        console.error("Google API Error Data:", JSON.stringify(data));
+    }
+    
     res.json(data);
   } catch (error) {
-    console.error("AI Proxy Error:", error);
+    console.error("AI Proxy Critical Error:", error);
     res.status(500).json({ error: "AI Service Unavailable" });
   }
 });
