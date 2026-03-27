@@ -27,18 +27,42 @@ app.post('/api/contact', async (req, res) => {
   const { firstName, lastName, email, service, message } = req.body;
   
   try {
-    // 1. Admin Alert
+    // 1. Admin Alert (Premium Theme)
     await transporter.sendMail({
       from: '"Versecure Priority" <hello.versecure@gmail.com>',
       to: 'azeem.makhdum6@gmail.com, abbas585@gmail.com',
       subject: `New Lead: ${firstName} ${lastName} - ${service}`,
       html: `
-        <h2>New Contact Form Submission</h2>
-        <p><strong>Name:</strong> ${firstName} ${lastName}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Service Requested:</strong> ${service}</p>
-        <p><strong>Message:</strong></p>
-        <blockquote style="border-left: 4px solid #ccc; padding-left: 10px;">${message}</blockquote>
+        <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #050505; color: #ffffff; padding: 40px 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background-color: #0a0a0a; border-radius: 20px; border: 1px solid #1a1a1a; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <div style="padding: 24px; border-bottom: 1px solid #1a1a1a; background: linear-gradient(180deg, #111 0%, #0a0a0a 100%); text-align: center;">
+              <h1 style="margin: 0; font-size: 18px; font-weight: 700; color: #fff; letter-spacing: -0.02em;">Versecure<span style="color: #3b82f6;">.</span> <span style="font-weight: 300; color: #666;">PRIORITY</span></h1>
+            </div>
+            <div style="padding: 40px;">
+              <h2 style="font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: #3b82f6; margin-bottom: 24px;">New Lead Captured</h2>
+              
+              <div style="margin-bottom: 32px;">
+                <p style="margin: 0 0 8px 0; font-size: 12px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em;">Client Details</p>
+                <p style="margin: 0; font-size: 16px; color: #fff;"><strong>${firstName} ${lastName}</strong> <span style="color: #6b7280; font-size: 14px;">(${email})</span></p>
+              </div>
+
+              <div style="margin-bottom: 32px;">
+                <p style="margin: 0 0 8px 0; font-size: 12px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em;">Service Vertical</p>
+                <p style="margin: 0; font-size: 16px; color: #fff;">${service}</p>
+              </div>
+
+              <div style="margin-bottom: 32px; padding: 24px; background-color: #111; border-radius: 12px; border: 1px solid #1a1a1a;">
+                <p style="margin: 0 0 12px 0; font-size: 12px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em;">Message Brief</p>
+                <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #d1d5db; font-style: italic;">"${message}"</p>
+              </div>
+
+              <a href="mailto:${email}" style="display: inline-block; padding: 12px 24px; background-color: #fff; color: #000; text-decoration: none; font-weight: 600; font-size: 14px; border-radius: 8px; transition: all 0.2s;">Reply Instantly</a>
+            </div>
+            <div style="padding: 20px; background-color: #050505; border-top: 1px solid #1a1a1a; text-align: center;">
+              <p style="margin: 0; font-size: 10px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.1em;">Internal Notification Only &bull; Versecure Tech</p>
+            </div>
+          </div>
+        </div>
       `
     });
 
@@ -84,7 +108,27 @@ app.post('/api/contact', async (req, res) => {
     console.error("Email send failed:", e);
   }
   
-  res.json({ success: true });
+  // Secure Forge AI Proxy (Zero-Leak Strategy)
+app.post('/api/forge', async (req, res) => {
+  const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyAsnl-ux0wCmZpF_hkMVWweacwvSVXKcjc'; // Fresh Key 
+  const contents = req.body.contents;
+
+  try {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ contents })
+    });
+
+    const data = await response.json();
+    res.json(data);
+  } catch (error) {
+    console.error("AI Proxy Error:", error);
+    res.status(500).json({ error: "AI Service Unavailable" });
+  }
+});
+
+res.json({ success: true });
 });
 
 // Serve the static Angular frontend

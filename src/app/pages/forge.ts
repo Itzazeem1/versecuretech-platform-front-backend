@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
-import { GoogleGenAI, Type } from '@google/genai';
 import { HeaderComponent } from '../components/header';
 import { ForgeStateService } from '../services/forge-state.service';
 import { SupabaseService } from '../services/supabase.service';
@@ -426,88 +425,50 @@ export class ForgeComponent implements OnInit {
     this.error.set('');
 
     try {
-      const apiKey = environment.geminiApiKey || localStorage.getItem('custom_gemini_key');
-      
-      if (!apiKey || apiKey === '${GEMINI_API_KEY}') {
-        throw new Error('Gemini API key not found. Please ensure it is set in your environment.');
-      }
-
-      const ai = new GoogleGenAI({ apiKey });
-      
-      const systemInstruction = `You are Forge AI, an advanced AI assistant and expert frontend developer.
-Your behavior depends on the user's prompt:
-1. If the user is just chatting, respond verbally. DO NOT generate code files.
-2. If the user explicitly asks to build/create/generate a web app, you MUST generate a complete project.
-
-WHEN GENERATING CODE:
-- For HTML files, include Tailwind CSS: <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-- Output a JSON object with a "files" property (array of {path, content}) and an optional "message".`;
-
-      const result = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: fullPrompt,
-        config: {
-          systemInstruction: systemInstruction,
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              message: { type: Type.STRING },
-              files: {
-                type: Type.ARRAY,
-                items: {
-                  type: Type.OBJECT,
-                  properties: {
-                    path: { type: Type.STRING },
-                    content: { type: Type.STRING }
-                  },
-                  required: ["path", "content"]
-                }
-              }
-            }
-          }
-        }
+      // Call our secure backend proxy (Zero-Leak Strategy)
+      const response = await fetch('/api/forge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: fullPrompt })
       });
 
-      const text = result.text || '';
+      if (!response.ok) throw new Error('AI Service failed');
+      const data = await response.json();
+      
+      if (data.candidates && data.candidates[0].content.parts[0].text) {
+        const textOutput = data.candidates[0].content.parts[0].text;
+        
+        // Extract files from JSON if present
+        const jsonMatch = textOutput.match(/\{[\s\S]*"files"[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            const projectData = JSON.parse(jsonMatch[0]);
+            if (projectData.files) {
+              this.state.setFiles(projectData.files);
+              this.state.addMessage({ role: 'model', text: projectData.message || "Project compiled successfully." });
+              this.updatePreview();
+              this.state.setViewMode('preview');
+            }
+          } catch (e) {
+            this.state.addMessage({ role: 'model', text: textOutput });
+          }
+        } else {
+          this.state.addMessage({ role: 'model', text: textOutput });
+        }
+      }
 
       this.loading.set(false);
       
-      // Deduct credits locally (and sync to Supabase)
+      // Deduct credits locally and sync to Supabase
       this.state.deductCredits(2);
       this.supabase.deductForgeCredits(2);
 
-      let jsonStr = text.trim();
-      if (jsonStr.startsWith('```json')) {
-        jsonStr = jsonStr.replace(/^```json\n/, '').replace(/\n```$/, '');
-      } else if (jsonStr.startsWith('```')) {
-        jsonStr = jsonStr.replace(/^```\n/, '').replace(/\n```$/, '');
-      }
-
-      try {
-        const parsed = JSON.parse(jsonStr);
-        if (parsed) {
-          if (parsed.files && Array.isArray(parsed.files) && parsed.files.length > 0) {
-            this.state.setFiles(parsed.files);
-            this.updatePreview();
-            this.state.setViewMode('preview');
-            
-            const msgText = parsed.message || `I've generated the project files. You can view the code in the explorer and check the live preview.`;
-            this.state.addMessage({ role: 'model', text: msgText });
-          } else if (parsed.message) {
-            this.state.addMessage({ role: 'model', text: parsed.message });
-          }
-        }
-      } catch (parseError: unknown) {
-        console.error('Failed to parse AI response:', text, parseError);
-        this.error.set('Failed to parse the generated code. Please try again.');
-        this.state.addMessage({ role: 'model', text: 'Sorry, I encountered an error formatting the files. Please try again.' });
-      }
-      
-    } catch (err: unknown) {
+    } catch (err: any) {
+      console.error('Forge AI error:', err);
       this.loading.set(false);
-      console.error('Generation error:', err);
-      this.error.set((err as Error).message || 'Failed to generate website. Please try again.');
+      this.error.set(err.message || 'An error occurred during generation.');
+    } finally {
+      this.loading.set(false);
     }
   }
 }
