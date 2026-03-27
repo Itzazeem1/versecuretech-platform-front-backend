@@ -127,16 +127,27 @@ app.post('/api/forge', async (req, res) => {
     return res.status(500).json({ error: "AI Service Not Configured. Please set GEMINI_API_KEY in Hostinger Environment Variables." });
   }
 
-  try {
     console.log("AI Proxy: Fetching from Google...");
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    let response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents })
     });
 
-    const data = await response.json();
-    console.log("AI Proxy: Received Response from Google", response.status);
+    let data = await response.json();
+    
+    // Fallback if 1.5 Flash is not found
+    if (response.status === 404) {
+        console.warn("AI Proxy: 1.5 Flash not found, falling back to gemini-pro...");
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ contents })
+        });
+        data = await response.json();
+    }
+
+    console.log("AI Proxy: Received Response (Status: " + response.status + ")");
     
     if (!response.ok) {
         console.error("Google API Error Data:", JSON.stringify(data));
