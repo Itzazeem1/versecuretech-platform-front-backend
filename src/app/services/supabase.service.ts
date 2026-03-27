@@ -91,11 +91,19 @@ export class SupabaseService {
   }
 
   async loginWithGoogle(redirectTo?: string): Promise<void> {
-    await this.supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: redirectTo || window.location.origin + '/portal' } });
+    const fallback = window.location.origin + window.location.pathname;
+    await this.supabase.auth.signInWithOAuth({ 
+      provider: 'google', 
+      options: { redirectTo: redirectTo || fallback } 
+    });
   }
 
   async loginWithGithub(redirectTo?: string): Promise<void> {
-    await this.supabase.auth.signInWithOAuth({ provider: 'github', options: { redirectTo: redirectTo || window.location.origin + '/portal' } });
+    const fallback = window.location.origin + window.location.pathname;
+    await this.supabase.auth.signInWithOAuth({ 
+      provider: 'github', 
+      options: { redirectTo: redirectTo || fallback } 
+    });
   }
 
   async updatePassword(newPassword: string): Promise<{error: unknown}> {
