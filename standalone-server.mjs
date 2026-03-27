@@ -110,8 +110,13 @@ app.post('/api/contact', async (req, res) => {
   
   // Secure Forge AI Proxy (Zero-Leak Strategy)
 app.post('/api/forge', async (req, res) => {
-  const apiKey = process.env.GEMINI_API_KEY || 'AIzaSyAsnl-ux0wCmZpF_hkMVWweacwvSVXKcjc'; // Fresh Key 
+  const apiKey = process.env.GEMINI_API_KEY; 
   const contents = req.body.contents;
+
+  if (!apiKey) {
+    console.error("AI Proxy Error: GEMINI_API_KEY is missing from environment variables.");
+    return res.status(500).json({ error: "AI Service Not Configured. Please set GEMINI_API_KEY." });
+  }
 
   try {
     const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
