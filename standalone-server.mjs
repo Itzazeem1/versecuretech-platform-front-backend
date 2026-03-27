@@ -104,22 +104,25 @@ app.post('/api/contact', async (req, res) => {
       `
     });
     console.log("Custom Ultra-Premium Email Blasted Successfully!");
+    res.json({ success: true });
   } catch (e) {
     console.error("Email send failed:", e);
+    res.status(500).json({ error: "Email delivery failed" });
   }
-  
-  // Secure Forge AI Proxy (Zero-Leak Strategy)
+});
+
+// Secure Forge AI Proxy (Zero-Leak Strategy)
 app.post('/api/forge', async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY; 
   const contents = req.body.contents;
 
   if (!apiKey) {
     console.error("AI Proxy Error: GEMINI_API_KEY is missing from environment variables.");
-    return res.status(500).json({ error: "AI Service Not Configured. Please set GEMINI_API_KEY." });
+    return res.status(500).json({ error: "AI Service Not Configured. Please set GEMINI_API_KEY as an Environment Variable in Hostinger." });
   }
 
   try {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`, {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ contents })
@@ -131,9 +134,6 @@ app.post('/api/forge', async (req, res) => {
     console.error("AI Proxy Error:", error);
     res.status(500).json({ error: "AI Service Unavailable" });
   }
-});
-
-res.json({ success: true });
 });
 
 // Serve the static Angular frontend
