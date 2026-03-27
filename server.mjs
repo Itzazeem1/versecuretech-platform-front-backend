@@ -134,7 +134,7 @@ app.post('/api/forge', async (req, res) => {
     
     console.log("AI Proxy: Generating via @google/genai SDK...");
     const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
+      model: "gemini-1.5-flash-latest",
       contents: userText,
     });
 
