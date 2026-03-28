@@ -33,7 +33,7 @@ import { RouterLink } from '@angular/router';
           <div>
             <h3 class="text-lg font-display font-semibold text-[var(--text-primary)] mb-6">Connect</h3>
             <ul class="space-y-4 text-[var(--text-muted)]">
-              <li><a href="https://www.instagram.com/versecuretech/" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--text-primary)] transition-colors">Instagram</a></li>
+              <li><a href="https://www.instagram.com/hello.versecure?igsh=M2Ewajc3ZWdzOXZn" target="_blank" rel="noopener noreferrer" class="hover:text-[var(--text-primary)] transition-colors">Instagram</a></li>
               <li><a routerLink="/portal" class="hover:text-[var(--accent-main)] transition-colors">Client Portal</a></li>
             </ul>
           </div>
