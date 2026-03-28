@@ -42,9 +42,27 @@ export class ThreeBackgroundComponent implements OnDestroy {
   private currentX = this.mouseX;
   private currentY = this.mouseY;
 
+  private targetFPS = 60;
+  private lastFrameTime = 0;
+  private isMobile = false;
+
   constructor() {
     afterNextRender(() => {
+      this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      this.targetFPS = this.isMobile ? 30 : 60; // Throttled on mobile
       this.initImmersiveShader();
+      this.setupVisibilityListener();
+    });
+  }
+
+  private setupVisibilityListener() {
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+        this.animationFrameId = null;
+      } else {
+        if (!this.animationFrameId) this.animate();
+      }
     });
   }
 
@@ -56,9 +74,13 @@ export class ThreeBackgroundComponent implements OnDestroy {
     // Orthographic camera for full screen 2D render
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-    this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: false, powerPreference: "high-performance" });
+    this.renderer = new THREE.WebGLRenderer({ 
+      alpha: true, 
+      antialias: !this.isMobile, // Disable antialiasing on mobile for extra speed
+      powerPreference: "high-performance" 
+    });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5)); // Optimize pixel ratio
+    this.renderer.setPixelRatio(this.isMobile ? 1.0 : Math.min(window.devicePixelRatio, 1.5)); 
     container.insertBefore(this.renderer.domElement, container.firstChild);
 
     // Full screen plane geometry
@@ -188,6 +210,12 @@ export class ThreeBackgroundComponent implements OnDestroy {
     this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
 
     if (!this.store.enable3D()) return; 
+
+    // FPS Throttling
+    const now = Date.now();
+    const elapsed = now - this.lastFrameTime;
+    if (elapsed < (1000 / this.targetFPS)) return;
+    this.lastFrameTime = now;
 
     // Smooth mouse coordinates interpolation
     this.currentX += (this.mouseX - this.currentX) * 0.05;

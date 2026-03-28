@@ -5,6 +5,7 @@ import { FooterComponent } from '../components/footer';
 import { ThreeBackgroundComponent } from '../components/three-bg';
 import { StoreService } from '../services/store.service';
 import { SupabaseService } from '../services/supabase.service';
+import { ActivatedRoute } from '@angular/router';
 import gsap from 'gsap';
 
 import { FormsModule } from '@angular/forms';
@@ -81,11 +82,12 @@ import { FormsModule } from '@angular/forms';
                   
                   <div class="flex flex-col gap-2 relative">
                      <label for="service" class="font-mono text-[var(--text-muted)] text-xs uppercase tracking-widest">Service Required</label>
-                     <select id="service" name="service" required class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors appearance-none">
+                     <select id="service" name="service" required [value]="preselectedService()" class="w-full bg-[var(--text-primary)]/5 border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)]/50 transition-colors appearance-none">
                         <option value="" disabled selected class="text-gray-500">Select a service...</option>
-                        <option value="Web Architecture" class="bg-[#0a0a0a]">Web Architecture</option>
-                        <option value="System Integration" class="bg-[#0a0a0a]">System Integration</option>
-                        <option value="Security Audit" class="bg-[#0a0a0a]">Security Audit</option>
+                        <option value="Web Development" class="bg-[#0a0a0a]">Web Development</option>
+                        <option value="App Development" class="bg-[#0a0a0a]">App Development</option>
+                        <option value="Cyber Security" class="bg-[#0a0a0a]">Cyber Security</option>
+                        <option value="SEO Optimization" class="bg-[#0a0a0a]">SEO Optimization</option>
                         <option value="Other" class="bg-[#0a0a0a]">Other</option>
                      </select>
                   </div>
@@ -135,12 +137,20 @@ export class ContactComponent implements OnDestroy {
   contactForm = viewChild<ElementRef>('contactForm');
   
   submitStatus = signal<'idle' | 'loading' | 'success' | 'error'>('idle');
+  preselectedService = signal<string>('');
 
   private ctx!: gsap.Context;
   public store = inject(StoreService);
   public supabase = inject(SupabaseService);
+  private route = inject(ActivatedRoute);
 
   constructor() {
+    // Check for pre-selected service from query params
+    const serviceParam = this.route.snapshot.queryParamMap.get('service');
+    if (serviceParam) {
+      this.preselectedService.set(serviceParam);
+    }
+
     afterNextRender(async () => {
       const { ScrollTrigger } = await import('gsap/ScrollTrigger');
       gsap.registerPlugin(ScrollTrigger);

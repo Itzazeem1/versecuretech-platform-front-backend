@@ -20,7 +20,10 @@ import gsap from 'gsap';
       
       <!-- Hero Section -->
       <section class="max-w-6xl mx-auto px-6 mb-32 md:mb-48 scene-anim relative overflow-hidden rounded-[3rem] py-24 border border-[var(--text-primary)]/5">
-        <img src="/assets/images/services-bg.png" alt="Services Background" class="absolute inset-0 w-full h-full object-cover opacity-50 transition-opacity duration-1000">
+        <img src="/assets/images/services-bg.png" alt="Services Background" 
+             loading="lazy"
+             decoding="async"
+             class="absolute inset-0 w-full h-full object-cover opacity-50 transition-opacity duration-1000">
         <div class="absolute inset-0 bg-gradient-to-r from-[var(--bg-main)] via-transparent to-transparent"></div>
         <div class="relative z-10 p-8 md:p-12">
           <h1 class="huge-text font-display font-bold tracking-tight mb-8">

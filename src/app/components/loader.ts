@@ -82,7 +82,13 @@ export class LoaderComponent implements OnDestroy {
           yPercent: -100,
           duration: 1,
           ease: 'power4.inOut',
-          delay: 0.2
+          delay: 0.2,
+          onComplete: () => {
+            if (this.loaderContainer()?.nativeElement) {
+              this.loaderContainer()!.nativeElement.style.display = 'none';
+              this.loaderContainer()!.nativeElement.style.pointerEvents = 'none';
+            }
+          }
         });
       });
     });

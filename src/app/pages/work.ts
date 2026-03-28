@@ -97,7 +97,10 @@ import gsap from 'gsap';
           </div>
           <div class="w-full md:w-2/3 md:offset-y-12">
             <div class="glass-panel p-10 md:p-14 rounded-[2rem] glow-hover relative overflow-hidden h-96 flex flex-col justify-between border border-[var(--text-primary)]/5 transition-colors group-hover:border-[#ff41b4]/30">
-               <img src="/assets/images/stay-ai.png" alt="Stay.ai" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-opacity duration-700">
+               <img src="/assets/images/stay-ai.png" alt="Stay.ai" 
+                    loading="lazy"
+                    decoding="async"
+                    class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-opacity duration-700">
                <div class="w-96 h-96 absolute -top-10 -right-10 bg-[#ff41b4] blur-[100px] opacity-10 pointer-events-none group-hover:opacity-30 transition-opacity duration-1000"></div>
                
                <p class="text-[var(--text-muted)] text-xl font-light leading-relaxed mb-10 relative z-10 max-w-lg">
@@ -123,7 +126,10 @@ import gsap from 'gsap';
           </div>
           <div class="w-full md:w-2/3 md:-offset-y-12">
             <div class="glass-panel p-10 md:p-14 rounded-[2rem] glow-hover relative overflow-hidden h-96 flex flex-col justify-between border border-[var(--text-primary)]/5 transition-colors group-hover:border-[#3b82f6]/30">
-               <img src="/assets/images/core-direction.png" alt="Core Direction" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-opacity duration-700">
+               <img src="/assets/images/core-direction.png" alt="Core Direction" 
+                    loading="lazy"
+                    decoding="async"
+                    class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-opacity duration-700">
                <div class="w-96 h-96 absolute -bottom-10 -left-10 bg-[#3b82f6] blur-[100px] opacity-10 pointer-events-none group-hover:opacity-30 transition-opacity duration-1000"></div>
                
                <p class="text-[var(--text-muted)] text-xl font-light leading-relaxed mb-10 relative z-10 max-w-lg">
@@ -149,7 +155,10 @@ import gsap from 'gsap';
           </div>
           <div class="w-full md:w-2/3 md:offset-y-12">
             <div class="glass-panel p-10 md:p-14 rounded-[2rem] glow-hover relative overflow-hidden h-96 flex flex-col justify-between border border-[var(--text-primary)]/5 transition-colors group-hover:border-[#f59e0b]/30">
-               <img src="/assets/images/climb-credit.png" alt="Climb Credit" class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-opacity duration-700">
+               <img src="/assets/images/climb-credit.png" alt="Climb Credit" 
+                    loading="lazy"
+                    decoding="async"
+                    class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-opacity duration-700">
                <div class="w-[800px] h-32 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#f59e0b] blur-[80px] opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity duration-1000"></div>
                
                <p class="text-[var(--text-muted)] text-xl font-light leading-relaxed mb-10 relative z-10 max-w-lg">

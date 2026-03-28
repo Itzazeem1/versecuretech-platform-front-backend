@@ -35,8 +35,10 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
             </a>
             
             <!-- Apple/Lando Dropdown Menu -->
-            <div class="absolute top-[120%] left-1/2 -translate-x-1/2 w-72 glass p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-400 transform translate-y-4 group-hover:translate-y-0 shadow-[0_20px_40px_rgba(0,0,0,0.4)] rounded-2xl">
-               <div class="flex flex-col gap-2">
+            <div class="absolute top-full left-1/2 -translate-x-1/2 w-72 glass p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-400 transform translate-y-2 group-hover:translate-y-0 shadow-[0_20px_40px_rgba(0,0,0,0.4)] rounded-2xl">
+               <!-- Invisible bridge to keep hover active -->
+               <div class="absolute -top-6 left-0 w-full h-6 transition-none"></div>
+               <div class="flex flex-col gap-2 relative z-10">
                  <a routerLink="/services/web-development" class="flex items-center gap-4 p-4 rounded-xl hover:bg-[var(--accent-main)]/10 border border-transparent hover:border-[var(--accent-main)]/20 transition-all group/item">
                    <div class="w-10 h-10 rounded-full bg-[var(--bg-secondary)] border border-[var(--text-primary)]/5 flex items-center justify-center text-[var(--accent-main)] transition-colors glow">
                       <span class="material-icons text-[18px]">code</span>

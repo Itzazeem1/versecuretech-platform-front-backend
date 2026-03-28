@@ -66,6 +66,8 @@ const WORKS: Record<string, WorkData> = {
           <div class="w-full h-[40vh] md:h-[60vh] relative mb-20 overflow-hidden work-anim glass-panel rounded-[2rem] glow-hover border border-[var(--text-primary)]/5 flex items-center justify-center">
              <img [src]="'/assets/images/' + work()?.id + '.png'" 
                   [alt]="work()?.title"
+                  loading="lazy"
+                  decoding="async"
                   class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700">
              <div class="absolute inset-0 bg-gradient-to-t from-[var(--bg-main)] via-transparent to-transparent opacity-60"></div>
           </div>
