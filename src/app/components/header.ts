@@ -1,11 +1,12 @@
 import { Component, signal, afterNextRender, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { NeonButtonComponent } from './neon-button';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive],
+  imports: [CommonModule, RouterLink, RouterLinkActive, NeonButtonComponent],
   template: `
     <!-- Top Header Navigation (Instantly Visible & Premium) -->
     <header class="fixed top-0 left-0 w-full z-[100] transition-all duration-300 pointer-events-auto" 
@@ -83,12 +84,12 @@ import { RouterLink, RouterLinkActive } from '@angular/router';
           <a routerLink="/work" routerLinkActive="text-[var(--text-primary)]" class="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--accent-main)] transition-colors">Work</a>
           <a routerLink="/pricing" routerLinkActive="text-[var(--text-primary)]" class="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--accent-main)] transition-colors">Pricing</a>
           
-          <div class="flex items-center gap-4 ml-4">
+          <div class="flex items-center gap-5 ml-6">
             <a routerLink="/login" class="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--accent-main)] transition-colors flex items-center gap-1">
               <span class="material-icons text-[16px]">person</span> Portal
             </a>
-            <a routerLink="/contact" class="inline-flex items-center justify-center px-8 py-3 text-xs tracking-widest uppercase font-bold text-[var(--bg-main)] bg-[var(--text-primary)] rounded-full hover:scale-105 hover:bg-[var(--text-primary)] hover:shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all">
-               Initialize
+            <a routerLink="/contact" class="inline-flex shrink-0">
+              <app-neon-button text="Initialize" [compact]="true"></app-neon-button>
             </a>
           </div>
         </nav>
