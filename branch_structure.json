@@ -1,0 +1,33 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "feat/initialize-button-design",
+    "feature/ai-improvements-work-page-visibility",
+    "feature/forge-groq-integration",
+    "feature/home-language-slider",
+    "feature/portal-projects-support",
+    "fix-forge-ai-responses",
+    "main",
+    "origin"
+  ],
+  "parent": {
+    "feat/initialize-button-design": "main",
+    "feature/ai-improvements-work-page-visibility": "main",
+    "feature/forge-groq-integration": "main",
+    "feature/home-language-slider": "main",
+    "feature/portal-projects-support": "main",
+    "fix-forge-ai-responses": "main",
+    "main": null,
+    "origin": "main"
+  },
+  "order": [
+    "main",
+    "feat/initialize-button-design",
+    "feature/ai-improvements-work-page-visibility",
+    "feature/forge-groq-integration",
+    "feature/home-language-slider",
+    "feature/portal-projects-support",
+    "fix-forge-ai-responses",
+    "origin"
+  ]
+}
