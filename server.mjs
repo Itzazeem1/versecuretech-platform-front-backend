@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import nodemailer from 'nodemailer';
 import { fileURLToPath } from 'url';
@@ -112,43 +113,178 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
-// Secure Forge AI Proxy (Zero-Leak Strategy)
+// Secure Forge AI Proxy (Supports Groq, xAI/Grok, and Gemini)
 app.post('/api/forge', async (req, res) => {
-  const apiKey = process.env.GEMINI_API_KEY; 
-  const contents = req.body.contents;
-
-  console.log("AI Proxy: Received Request");
-  if (!apiKey) {
-    console.error("AI Proxy Error: GEMINI_API_KEY is missing from environment variables.");
-    return res.status(500).json({ error: "AI Service Not Configured. Please set GEMINI_API_KEY in Hostinger Environment Variables." });
-  }
-
   try {
-    const ai = new GoogleGenAI({ apiKey });
-    
+    const contents = req.body.contents;
     // Extract the user text from the contents array
     const userText = contents
       ?.flatMap((c) => c.parts)
       ?.map((p) => p.text)
       ?.join('\n') || '';
-    
-    console.log("AI Proxy: Generating via @google/genai SDK...");
-    const response = await ai.models.generateContent({
-      model: "gemini-1.5-flash-latest",
-      contents: userText,
-    });
 
-    const text = response.text;
-    console.log("AI Proxy: Success.");
+    console.log("AI Proxy: Received Request");
+    console.log("User prompt length:", userText ? userText.length : 0);
+
+    const systemInstruction = `You are Forge AI, an advanced AI assistant and expert frontend developer.
+Your behavior depends on the user's prompt:
+1. If the user is just chatting, asking questions, or giving normal commands (e.g., "hello", "how are you", "explain this"), respond verbally in a helpful and conversational manner. DO NOT generate code files.
+2. If the user explicitly asks you to build, create, or generate a web application, component, or UI (e.g., "build a calculator", "create a landing page"), you MUST generate a complete project.
+
+WHEN GENERATING CODE:
+- Generate a realistic project structure matching modern web development.
+- For HTML files, include Tailwind CSS via CDN: <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+- Ensure the design is modern, responsive, and accessible.
+- Use high-quality UI patterns and animations where appropriate.
+
+OUTPUT FORMAT:
+- If responding verbally, output a JSON object with a single "message" property containing your response string. Example: {"message": "Hello! How can I help you today?"}
+- If generating code, output a JSON object with a "files" property containing an array of file objects, and an optional "message" property explaining what you built. Example: {"files": [{"path": "index.html", "content": "..."}], "message": "I built a calculator..."}`;
+
+    // 1. Resolve Provider, API Key, and Model
+    let provider = 'gemini'; // default fallback
+    let apiKey = process.env.GEMINI_API_KEY;
+    let model = 'gemini-1.5-flash-latest';
+
+    // Check if Groq is explicitly configured
+    if (process.env.GROQ_API_KEY && 
+        process.env.GROQ_API_KEY !== 'gsk_your_groq_api_key_here' && 
+        process.env.GROQ_API_KEY.trim() !== '') {
+      provider = 'groq';
+      apiKey = process.env.GROQ_API_KEY;
+      model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+    } 
+    // Check if xAI / Grok is explicitly configured
+    else if (process.env.XAI_API_KEY && process.env.XAI_API_KEY.trim() !== '') {
+      provider = 'xai';
+      apiKey = process.env.XAI_API_KEY;
+      model = process.env.XAI_MODEL || 'grok-4.3';
+    }
+
+    // Check if FORGE_API_KEY is defined as a general override key
+    const overrideKey = process.env.FORGE_API_KEY;
+    if (overrideKey && overrideKey.trim() !== '') {
+      const trimmedKey = overrideKey.trim();
+      apiKey = trimmedKey;
+      if (trimmedKey.startsWith('gsk_')) {
+        provider = 'groq';
+        model = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+      } else if (trimmedKey.startsWith('xai-')) {
+        provider = 'xai';
+        model = process.env.XAI_MODEL || 'grok-4.3';
+      } else if (trimmedKey.startsWith('AIzaSy')) {
+        provider = 'gemini';
+        model = 'gemini-1.5-flash-latest';
+      } else {
+        // Unknown format, guess provider based on defined model envs or fallback to groq
+        if (process.env.GROQ_MODEL) {
+          provider = 'groq';
+          model = process.env.GROQ_MODEL;
+        } else if (process.env.XAI_MODEL) {
+          provider = 'xai';
+          model = process.env.XAI_MODEL;
+        }
+      }
+    }
+
+    console.log(`AI Proxy resolved provider: ${provider}, model: ${model}`);
+
+    if (!apiKey || apiKey.trim() === '' || apiKey.includes('your_') || apiKey.includes('xxxxxxxxxxxxx')) {
+      console.error(`AI Proxy Error: API Key for provider '${provider}' is missing or placeholder.`);
+      return res.status(500).json({ 
+        error: `AI Service Not Configured. Please set the correct API key for '${provider}' in your environment variables / .env file.` 
+      });
+    }
+
+    let generatedText = '';
+
+    if (provider === 'gemini') {
+      console.log("AI Proxy: Generating via @google/genai SDK...");
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: userText,
+        config: {
+          systemInstruction: systemInstruction,
+          responseMimeType: "application/json",
+          temperature: 0.7
+        }
+      });
+      generatedText = response.text || '';
+    } else if (provider === 'groq') {
+      console.log(`AI Proxy: Generating via Groq API (${model})...`);
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: 'system', content: systemInstruction },
+            { role: 'user', content: userText }
+          ],
+          response_format: { type: "json_object" },
+          max_tokens: 4096,
+          temperature: 0.7
+        })
+      });
+
+      console.log("Groq API response status:", response.status);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error("Groq API Full Error:", errorData);
+        return res.status(response.status).json({ error: `Groq API error: ${response.status} - ${errorData}` });
+      }
+
+      const data = await response.json();
+      generatedText = data.choices?.[0]?.message?.content || '';
+    } else if (provider === 'xai') {
+      console.log(`AI Proxy: Generating via xAI Grok API (${model})...`);
+      const response = await fetch('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: [
+            { role: 'system', content: systemInstruction },
+            { role: 'user', content: userText }
+          ],
+          response_format: { type: "json_object" },
+          max_tokens: 4096,
+          temperature: 0.7
+        })
+      });
+
+      console.log("xAI API response status:", response.status);
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error("xAI API Full Error:", errorData);
+        return res.status(response.status).json({ error: `xAI API error: ${response.status} - ${errorData}` });
+      }
+
+      const data = await response.json();
+      generatedText = data.choices?.[0]?.message?.content || '';
+    }
+
+    console.log("AI Proxy: Success. Generated content length:", generatedText.length);
     
-    res.json({
+    return res.json({
       candidates: [{
-        content: { parts: [{ text }], role: 'model' }
+        content: { parts: [{ text: generatedText }], role: 'model' }
       }]
     });
+
   } catch (error) {
     console.error("AI Proxy Critical Error:", error.message || error);
-    res.status(500).json({ error: error.message || "AI Service Unavailable" });
+    console.error("Stack trace:", error.stack);
+    return res.status(500).json({ error: error.message || "AI Service Unavailable" });
   }
 });
 
