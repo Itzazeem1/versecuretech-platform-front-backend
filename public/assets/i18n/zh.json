@@ -1,0 +1,46 @@
+{
+  "nav": {
+    "services": "Services",
+    "about": "About",
+    "work": "Work",
+    "pricing": "Pricing",
+    "portal": "Portal",
+    "initialize": "Initialize",
+    "home": "Home",
+    "matrixNav": "Matrix Navigation",
+    "initializeContact": "Initialize Contact",
+    "engineering": "Engineering",
+    "engineeringSub": "Performance & Scale",
+    "appDev": "App Development",
+    "appDevSub": "iOS & Android",
+    "protection": "Protection",
+    "protectionSub": "Absolute Security",
+    "growth": "Growth",
+    "growthSub": "SEO & Conversions"
+  },
+  "home": {
+    "heroTitle": "We build systems that scale.",
+    "heroSubtitle": "Transform ideas into impactful digital solutions. Bridge vision and execution.",
+    "philosophyTitle": "Bridge vision and execution.",
+    "philosophyBody": "We construct scalable, high-performance web architecture that eliminates friction. No clutter, no unnecessary noise. Just confident engineering designed for the highest level of interaction.",
+    "exploreArchitecture": "Explore Architecture",
+    "servicesTitle": "Build scalable, meaningful systems.",
+    "servicesSubtitle": "Military-grade protection, rapid deployment pipelines, and semantic architectures."
+  },
+  "footer": {
+    "headline": "Let's Build",
+    "headlineAccent": "Something Great.",
+    "description": "Elevating brands through cinematic digital experiences, robust engineering, and strategic SEO.",
+    "services": "Services",
+    "cyberSecurity": "Cyber Security",
+    "webDevelopment": "Web Development",
+    "appDevelopment": "App Development",
+    "seoOptimization": "SEO Optimization",
+    "connect": "Connect",
+    "clientPortal": "Client Portal",
+    "rights": "VersecureTech. All rights reserved.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "cookies": "Cookies Policy"
+  }
+}
