@@ -2198,13 +2198,13 @@ export class ForgeComponent implements OnInit {
         help: "Of course! Just describe the site or feature you want to build and I'll get to work. For example: \"Build me a SaaS landing page for a cybersecurity startup.\"",
       };
       const lower = userPrompt.toLowerCase();
-      let reply = casualReplies.greet;
-      if (/thank/.test(lower)) reply = casualReplies.thanks;
-      else if (/what|who|tell|forge|ai|bot/.test(lower)) reply = casualReplies.what;
-      else if (/help/.test(lower)) reply = casualReplies.help;
+      let reply = casualReplies['greet'];
+      if (/thank/.test(lower)) reply = casualReplies['thanks'];
+      else if (/what|who|tell|forge|ai|bot/.test(lower)) reply = casualReplies['what'];
+      else if (/help/.test(lower)) reply = casualReplies['help'];
 
       this.state.addMessage({ role: 'user', text: userPrompt });
-      this.state.addMessage({ role: 'assistant', text: reply });
+      this.state.addMessage({ role: 'model', text: reply });
       this.prompt.set('');
       return;
     }
