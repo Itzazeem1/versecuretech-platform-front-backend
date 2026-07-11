@@ -3,6 +3,20 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --color-amber-50: #EEF2FF;
+  --color-amber-100: #C7D2FE;
+  --color-amber-200: #A5B4FC;
+  --color-amber-300: #818CF8;
+  --color-amber-400: #6366F1; /* Premium Electric Indigo */
+  --color-amber-500: #4F46E5;
+  --color-amber-600: #4338CA;
+  --color-amber-700: #3730A3;
+  --color-amber-800: #312E81;
+  --color-amber-900: #1E1B4B;
+  --color-amber-950: #0F0E26;
+}
+
 :root {
   --bg-main: #0B0F1A;
   --bg-secondary: #121826;
