@@ -27,6 +27,7 @@ export class SupabaseService {
   public currentUser = signal<User | null>(null);
   public isConnected = signal<boolean>(false);
   public hasForgeAccess = signal<boolean>(false);
+  public isDeveloperAccount = signal<boolean>(false);
 
   constructor() {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
@@ -50,6 +51,7 @@ export class SupabaseService {
       this.isAdmin.set(false);
       this.isLoggedIn.set(false);
       this.hasForgeAccess.set(false);
+      this.isDeveloperAccount.set(false);
       this.currentUser.set(null);
       return;
     }
@@ -58,7 +60,6 @@ export class SupabaseService {
     
     const email = user.email?.toLowerCase() || '';
     const adminEmails = ['azeem.makhdum6@gmail.com', 'abbas585@gmail.com'];
-    const allowedForgeEmails = [...adminEmails, 'test@example.com']; 
 
     console.log(`[Supabase Auth] Identifying user: ${email}`);
 
@@ -67,10 +68,26 @@ export class SupabaseService {
     this.isAdmin.set(isSystemAdmin);
     
     // 2. Determine Forge Access
-    const hasAccess = isSystemAdmin || allowedForgeEmails.includes(email);
+    const hasAccess = isSystemAdmin;
     this.hasForgeAccess.set(hasAccess);
+    this.isDeveloperAccount.set(isSystemAdmin);
+    this.refreshForgeAccess(email);
 
     console.log(`[Supabase Auth] Admin: ${isSystemAdmin}, Forge Access: ${hasAccess}`);
+  }
+
+  async refreshForgeAccess(email = this.currentUser()?.email || '') {
+    const normalizedEmail = email.toLowerCase();
+    if (!normalizedEmail) return;
+    try {
+      const response = await fetch(`/api/forge/access?email=${encodeURIComponent(normalizedEmail)}`);
+      if (!response.ok) return;
+      const data = await response.json();
+      this.hasForgeAccess.set(!!data.hasAccess);
+      this.isDeveloperAccount.set(!!data.isDeveloper);
+    } catch (error) {
+      console.warn('Forge access refresh failed', error);
+    }
   }
 
   // 1. Auth Flow - Secured via Supabase Auth
@@ -255,6 +272,7 @@ export class SupabaseService {
 
   // Credit Management (Serverless)
   async getForgeCredits(): Promise<number> {
+    if (this.isDeveloperAccount()) return 999999;
     if (!this.currentUser()) return 100; // Default for guests
     
     const { data, error } = await this.supabase
@@ -268,6 +286,7 @@ export class SupabaseService {
   }
 
   async deductForgeCredits(amount: number): Promise<boolean> {
+    if (this.isDeveloperAccount()) return true;
     if (!this.currentUser()) return true; // Don't persist for guests
     
     const current = await this.getForgeCredits();

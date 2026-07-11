@@ -3,8 +3,10 @@ import express from 'express';
 import nodemailer from 'nodemailer';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import cors from 'cors';
 import { GoogleGenAI } from "@google/genai";
+import { normalizeConversationHistory, buildChatMessages, buildForgeContextPayload } from './forge-ai-utils.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -12,6 +14,51 @@ const __dirname = dirname(__filename);
 const app = express();
 app.use(express.json());
 app.use(cors());
+
+const developerEmails = ['azeem.makhdum6@gmail.com', 'abbas585@gmail.com'];
+const accessStorePath = join(__dirname, 'forge-access.json');
+
+function readForgeAccessStore() {
+  try {
+    if (!existsSync(accessStorePath)) {
+      return { allowedEmails: ['test@example.com'] };
+    }
+    const parsed = JSON.parse(readFileSync(accessStorePath, 'utf8'));
+    return {
+      allowedEmails: Array.isArray(parsed.allowedEmails)
+        ? parsed.allowedEmails.map((email) => `${email}`.toLowerCase())
+        : []
+    };
+  } catch (error) {
+    console.warn('Failed to read Forge access store:', error.message);
+    return { allowedEmails: [] };
+  }
+}
+
+function writeForgeAccessStore(store) {
+  writeFileSync(accessStorePath, JSON.stringify(store, null, 2));
+}
+
+function isAdminEmail(email = '') {
+  return developerEmails.includes(`${email}`.toLowerCase());
+}
+
+function getForgeAccessPayload(email = '', includeAllowedEmails = false) {
+  const normalizedEmail = `${email}`.toLowerCase();
+  const store = readForgeAccessStore();
+  const isDeveloper = isAdminEmail(normalizedEmail);
+  const hasAccess = isDeveloper || store.allowedEmails.includes(normalizedEmail);
+  const payload = {
+    email: normalizedEmail,
+    hasAccess,
+    isDeveloper,
+    credits: isDeveloper ? 999999 : null
+  };
+  if (includeAllowedEmails) {
+    payload.allowedEmails = Array.from(new Set([...developerEmails, ...store.allowedEmails])).sort();
+  }
+  return payload;
+}
 
 // Premium Email Configuration
 const transporter = nodemailer.createTransport({
@@ -113,33 +160,143 @@ app.post('/api/contact', async (req, res) => {
   }
 });
 
+app.get('/api/forge/access', (req, res) => {
+  const email = typeof req.query.email === 'string' ? req.query.email : '';
+  return res.json(getForgeAccessPayload(email));
+});
+
+app.post('/api/admin/upgrade-session', (req, res) => {
+  const email = `${req.body?.email || ''}`.toLowerCase();
+  if (!isAdminEmail(email)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  return res.json({ credits: 999999, unlimited: true });
+});
+
+app.get('/api/admin/forge-access', (req, res) => {
+  const adminEmail = typeof req.query.adminEmail === 'string' ? req.query.adminEmail : '';
+  if (!isAdminEmail(adminEmail)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  return res.json(getForgeAccessPayload(adminEmail, true));
+});
+
+app.post('/api/admin/forge-access/grant', (req, res) => {
+  const adminEmail = `${req.body?.adminEmail || ''}`.toLowerCase();
+  const targetEmail = `${req.body?.email || ''}`.toLowerCase().trim();
+  if (!isAdminEmail(adminEmail)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail)) {
+    return res.status(400).json({ error: 'Valid email required' });
+  }
+  const store = readForgeAccessStore();
+  store.allowedEmails = Array.from(new Set([...store.allowedEmails, targetEmail])).sort();
+  writeForgeAccessStore(store);
+  return res.json(getForgeAccessPayload(adminEmail, true));
+});
+
+app.post('/api/admin/forge-access/revoke', (req, res) => {
+  const adminEmail = `${req.body?.adminEmail || ''}`.toLowerCase();
+  const targetEmail = `${req.body?.email || ''}`.toLowerCase().trim();
+  if (!isAdminEmail(adminEmail)) {
+    return res.status(403).json({ error: 'Admin access required' });
+  }
+  if (isAdminEmail(targetEmail)) {
+    return res.status(400).json({ error: 'Developer access cannot be revoked' });
+  }
+  const store = readForgeAccessStore();
+  store.allowedEmails = store.allowedEmails.filter((email) => email !== targetEmail);
+  writeForgeAccessStore(store);
+  return res.json(getForgeAccessPayload(adminEmail, true));
+});
+
+async function researchWeb(query) {
+  const cleanQuery = `${query || ''}`.replace(/\s+/g, ' ').trim().slice(0, 180);
+  if (!cleanQuery) return '';
+  try {
+    const response = await fetch(`https://duckduckgo.com/html/?q=${encodeURIComponent(cleanQuery)}`, {
+      headers: { 'User-Agent': 'Mozilla/5.0 ForgeAIResearch/1.0' }
+    });
+    const html = await response.text();
+    const results = [];
+    const pattern = /<a rel="nofollow" class="result__a" href="([^"]+)"[^>]*>(.*?)<\/a>[\s\S]*?<a class="result__snippet"[^>]*>(.*?)<\/a>/gi;
+    let match;
+    while ((match = pattern.exec(html)) && results.length < 5) {
+      results.push({
+        title: match[2].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').trim(),
+        url: match[1].replace(/&amp;/g, '&'),
+        snippet: match[3].replace(/<[^>]+>/g, '').replace(/&amp;/g, '&').trim()
+      });
+    }
+    if (results.length === 0) return '';
+    return results.map((result, index) => `${index + 1}. ${result.title}\n${result.snippet}\n${result.url}`).join('\n\n');
+  } catch (error) {
+    console.warn('Forge web research failed:', error.message);
+    return '';
+  }
+}
+
 // Secure Forge AI Proxy (Supports Groq, xAI/Grok, and Gemini)
 app.post('/api/forge', async (req, res) => {
   try {
-    const contents = req.body.contents;
-    // Extract the user text from the contents array
-    const userText = contents
-      ?.flatMap((c) => c.parts)
-      ?.map((p) => p.text)
-      ?.join('\n') || '';
-
+    const history = Array.isArray(req.body.history) ? req.body.history : [];
+    const prompt = typeof req.body.prompt === 'string' ? req.body.prompt : '';
+    const workspaceFiles = Array.isArray(req.body.workspaceFiles) ? req.body.workspaceFiles : [];
+    const attachedFiles = Array.isArray(req.body.attachedFiles) ? req.body.attachedFiles : [];
+    const context = req.body.context || {};
+    const callerEmail = `${req.body.email || context.email || ''}`.toLowerCase().trim();
+    const access = getForgeAccessPayload(callerEmail);
+    if (!callerEmail || !access.hasAccess) {
+      return res.status(403).json({ error: 'Forge access required' });
+    }
+    const normalizedHistory = normalizeConversationHistory(history, 12);
+    const userText = prompt || req.body.contents?.flatMap((c) => c.parts)?.map((p) => p.text)?.join('\n') || '';
+    const shouldResearch = /\b(research|internet|web|latest|current|trends?|competitors?|inspiration|benchmark)\b/i.test(userText);
+    const researchContext = shouldResearch ? await researchWeb(userText) : '';
+    const enrichedPrompt = buildForgeContextPayload({
+      prompt: userText,
+      systemPrompt: context.systemPrompt || '',
+      projectSummary: [context.projectSummary, context.projectBrief, context.workflowSummary].filter(Boolean).join('\n\n'),
+      conversationSummary: context.conversationSummary || '',
+      recentMessages: context.recentMessages || [],
+      workspaceFiles,
+      currentFileTree: context.currentFileTree || [],
+      selectedFile: context.selectedFile || null,
+      pendingTasks: context.pendingTasks || [],
+      recentEdits: [...(context.recentEdits || []), ...(context.repairHistory || [])],
+      openTabs: context.openTabs || [],
+      currentUserPrompt: userText
+    });
+    const promptWithResearch = researchContext
+      ? `${enrichedPrompt}\n\nWEB RESEARCH CONTEXT:\n${researchContext}\n\nUse this research only as inspiration and cite no raw URLs in user-facing chat unless useful.`
+      : enrichedPrompt;
+    const combinedHistory = normalizedHistory.map((msg) => `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.text}`).join('\n');
+    
     console.log("AI Proxy: Received Request");
     console.log("User prompt length:", userText ? userText.length : 0);
+    console.log("History length:", normalizedHistory.length);
 
-    const systemInstruction = `You are Forge AI, an advanced AI assistant and expert frontend developer.
-Your behavior depends on the user's prompt:
-1. If the user is just chatting, asking questions, or giving normal commands (e.g., "hello", "how are you", "explain this"), respond verbally in a helpful and conversational manner. DO NOT generate code files.
-2. If the user explicitly asks you to build, create, or generate a web application, component, or UI (e.g., "build a calculator", "create a landing page"), you MUST generate a complete project.
+    const systemInstruction = `You are Forge AI, an autonomous product builder for modern web applications.
+Maintain persistent project memory across the conversation and never treat the request as a blank slate.
+Before editing, understand the current project architecture, generated files, dependencies, routes, and recent changes.
+Prefer targeted updates to existing files over regenerating entire projects.
 
-WHEN GENERATING CODE:
-- Generate a realistic project structure matching modern web development.
-- For HTML files, include Tailwind CSS via CDN: <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
-- Ensure the design is modern, responsive, and accessible.
-- Use high-quality UI patterns and animations where appropriate.
+CRITICAL — INTENT DETECTION:
+First, classify the user's message intent before responding:
+- If the message is a GREETING, SMALL TALK, or CASUAL CONVERSATION (e.g. "hi", "hello", "how are you", "what can you do", "thanks", "cool", "ok"), respond with a short, friendly conversational text reply. Do NOT generate files. Return JSON like: {"message":"Your friendly reply here","files":[],"routes":[]}
+- If the message is a QUESTION about Forge AI's capabilities or how to use it, answer it conversationally in the "message" field. Return JSON like: {"message":"Your answer here","files":[],"routes":[]}
+- Only generate files when the user clearly requests a website, app, page, feature, component, or improvement.
 
-OUTPUT FORMAT:
-- If responding verbally, output a JSON object with a single "message" property containing your response string. Example: {"message": "Hello! How can I help you today?"}
-- If generating code, output a JSON object with a "files" property containing an array of file objects, and an optional "message" property explaining what you built. Example: {"files": [{"path": "index.html", "content": "..."}], "message": "I built a calculator..."}`;
+When the user asks for a feature, component, or UI update, create or update the relevant files directly.
+When the user asks for a new project, create a coherent project structure and preserve the conversation context.
+When the user asks to make the site more advanced, upgrade, improve, redesign, modernize, or make it premium, treat it as an in-place project enhancement. Preserve the current structure and return structured project changes or file operations rather than a chat-only explanation.
+Quality standard: aim for premium builder output comparable to Lovable/Bolt/Replit-style demos. Prioritize a cohesive design system, strong typography, responsive layouts, meaningful content, accessible markup, SEO basics, polished micro-interactions, complete navigation, and obvious visible improvements on enhancement requests.
+Return only valid JSON. For project changes, return this shape whenever possible:
+{"message":"short user-facing summary","files":[{"path":"index.html","content":"..."}],"routes":[{"path":"index.html","title":"Home"},{"path":"about.html","title":"About"}],"warnings":[],"projectSummary":"...","conversationSummary":"...","pendingTasks":[],"completedTasks":[]}
+For multi-page sites, every internal navigation link must point to a generated HTML file. Prefer simple static paths like index.html, about.html, services.html, contact.html.
+Never create placeholder, empty, TODO, coming soon, or stub pages. If navigation references a route, build the real page with complete content and matching design. Never claim a project is multi-page unless all linked pages are included and complete.
+If you modify files, prefer operations like {"type":"update","path":"index.html","content":"..."} or {"type":"create","path":"about.html","content":"..."}.`;
 
     // 1. Resolve Provider, API Key, and Model
     let provider = 'gemini'; // default fallback
@@ -201,9 +358,10 @@ OUTPUT FORMAT:
     if (provider === 'gemini') {
       console.log("AI Proxy: Generating via @google/genai SDK...");
       const ai = new GoogleGenAI({ apiKey });
+      const conversation = [combinedHistory, promptWithResearch].filter(Boolean).join('\n\n');
       const response = await ai.models.generateContent({
         model: model,
-        contents: userText,
+        contents: conversation || userText,
         config: {
           systemInstruction: systemInstruction,
           responseMimeType: "application/json",
@@ -213,6 +371,12 @@ OUTPUT FORMAT:
       generatedText = response.text || '';
     } else if (provider === 'groq') {
       console.log(`AI Proxy: Generating via Groq API (${model})...`);
+      const messages = buildChatMessages({
+        history,
+        prompt: promptWithResearch,
+        systemInstruction,
+        provider
+      });
       const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -221,13 +385,10 @@ OUTPUT FORMAT:
         },
         body: JSON.stringify({
           model: model,
-          messages: [
-            { role: 'system', content: systemInstruction },
-            { role: 'user', content: userText }
-          ],
+          messages,
           response_format: { type: "json_object" },
-          max_tokens: 4096,
-          temperature: 0.7
+          max_tokens: 12000,
+          temperature: 0.55
         })
       });
 
@@ -243,6 +404,12 @@ OUTPUT FORMAT:
       generatedText = data.choices?.[0]?.message?.content || '';
     } else if (provider === 'xai') {
       console.log(`AI Proxy: Generating via xAI Grok API (${model})...`);
+      const messages = buildChatMessages({
+        history,
+        prompt: promptWithResearch,
+        systemInstruction,
+        provider
+      });
       const response = await fetch('https://api.x.ai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -251,13 +418,10 @@ OUTPUT FORMAT:
         },
         body: JSON.stringify({
           model: model,
-          messages: [
-            { role: 'system', content: systemInstruction },
-            { role: 'user', content: userText }
-          ],
+          messages,
           response_format: { type: "json_object" },
-          max_tokens: 4096,
-          temperature: 0.7
+          max_tokens: 12000,
+          temperature: 0.55
         })
       });
 

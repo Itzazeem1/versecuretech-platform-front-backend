@@ -291,6 +291,52 @@ import gsap from 'gsap';
                 <p class="text-[10px] text-[var(--text-primary)] relative z-10 opacity-70">Awwwards 3D Renders Online</p>
               </div>
 
+              <!-- Forge AI Access Control -->
+              <div class="glass-panel p-8 rounded-[2rem] border border-cyan-400/20">
+                <div class="flex items-center gap-3 mb-6">
+                  <span class="material-icons text-cyan-300">auto_awesome</span>
+                  <div>
+                    <h3 class="font-medium text-xl">Forge AI Access</h3>
+                    <p class="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-mono">Grant or revoke builder seats</p>
+                  </div>
+                </div>
+
+                <div class="flex gap-2 mb-5">
+                  <input
+                    type="email"
+                    [ngModel]="forgeAccessEmail()"
+                    (ngModelChange)="forgeAccessEmail.set($event)"
+                    class="flex-1 bg-transparent border border-[var(--text-primary)]/20 rounded-xl px-4 py-3 text-sm focus:border-cyan-300 outline-none"
+                    placeholder="client@email.com" />
+                  <button
+                    (click)="grantForgeAccess()"
+                    [disabled]="forgeAccessLoading() || !forgeAccessEmail().trim()"
+                    class="px-4 rounded-xl bg-cyan-300 text-black text-xs font-bold uppercase tracking-widest disabled:opacity-40">
+                    Grant
+                  </button>
+                </div>
+
+                <div class="space-y-2 max-h-52 overflow-y-auto pr-1 custom-scrollbar">
+                  @for (email of forgeAccessList(); track email) {
+                    <div class="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+                      <div class="min-w-0">
+                        <div class="truncate text-xs text-[var(--text-primary)]">{{ email }}</div>
+                        <div class="text-[9px] uppercase tracking-widest text-[var(--text-muted)]">{{ email === 'azeem.makhdum6@gmail.com' || email === 'abbas585@gmail.com' ? 'Developer / unlimited credits' : 'Limited credits' }}</div>
+                      </div>
+                      @if (email !== 'azeem.makhdum6@gmail.com' && email !== 'abbas585@gmail.com') {
+                        <button (click)="revokeForgeAccess(email)" class="text-[10px] uppercase tracking-widest text-red-300 hover:text-red-200">Revoke</button>
+                      }
+                    </div>
+                  } @empty {
+                    <p class="text-xs text-[var(--text-muted)] text-center py-4">No Forge seats loaded yet.</p>
+                  }
+                </div>
+
+                @if (forgeAccessMsg()) {
+                  <p class="mt-4 text-xs text-center text-cyan-200">{{ forgeAccessMsg() }}</p>
+                }
+              </div>
+
               <!-- Security Settings -->
               <div class="glass-panel p-8 rounded-[2rem] border border-[var(--text-primary)]/10">
                 <div class="flex items-center gap-3 mb-6">
@@ -332,6 +378,10 @@ export class AdminComponent {
   updatingPassword = signal(false);
   passwordMsg = signal('');
   passwordSuccess = signal(false);
+  forgeAccessEmail = signal('');
+  forgeAccessList = signal<string[]>([]);
+  forgeAccessMsg = signal('');
+  forgeAccessLoading = signal(false);
 
   selectedSection = signal('home');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -349,6 +399,7 @@ export class AdminComponent {
       this.supabase.checkSession();
       if (this.supabase.isAdmin()) {
         this.loadSection(this.selectedSection());
+        this.loadForgeAccessList();
         this.animateDashboard();
       }
 
@@ -362,6 +413,7 @@ export class AdminComponent {
     effect(() => {
       if (this.supabase.isAdmin()) {
         this.loadSection(this.selectedSection());
+        this.loadForgeAccessList();
       }
     });
   }
@@ -383,10 +435,76 @@ export class AdminComponent {
         error: (err) => console.warn('Admin Forge boost failed', err)
       });
       setTimeout(() => this.animateDashboard(), 100);
+      this.loadForgeAccessList();
     } else {
       this.error.set((error as Error).message || 'Access Denied: Invalid credentials.');
     }
     this.loading.set(false);
+  }
+
+  private adminEmail(): string {
+    return this.supabase.currentUser()?.email || this.email();
+  }
+
+  async loadForgeAccessList() {
+    if (!this.supabase.isAdmin() || this.forgeAccessLoading()) return;
+    this.forgeAccessLoading.set(true);
+    try {
+      const response = await fetch(`/api/admin/forge-access?adminEmail=${encodeURIComponent(this.adminEmail())}`);
+      const data = await response.json();
+      if (response.ok) {
+        this.forgeAccessList.set(data.allowedEmails || []);
+      }
+    } catch (error) {
+      console.warn('Forge access list failed', error);
+    } finally {
+      this.forgeAccessLoading.set(false);
+    }
+  }
+
+  async grantForgeAccess() {
+    const email = this.forgeAccessEmail().trim().toLowerCase();
+    if (!email) return;
+    this.forgeAccessLoading.set(true);
+    this.forgeAccessMsg.set('');
+    try {
+      const response = await fetch('/api/admin/forge-access/grant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminEmail: this.adminEmail(), email })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to grant access');
+      this.forgeAccessList.set(data.allowedEmails || []);
+      this.forgeAccessEmail.set('');
+      this.forgeAccessMsg.set(`Forge access granted to ${email}`);
+    } catch (error: any) {
+      this.forgeAccessMsg.set(error.message || 'Failed to grant Forge access');
+    } finally {
+      this.forgeAccessLoading.set(false);
+      setTimeout(() => this.forgeAccessMsg.set(''), 3500);
+    }
+  }
+
+  async revokeForgeAccess(email: string) {
+    this.forgeAccessLoading.set(true);
+    this.forgeAccessMsg.set('');
+    try {
+      const response = await fetch('/api/admin/forge-access/revoke', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminEmail: this.adminEmail(), email })
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to revoke access');
+      this.forgeAccessList.set(data.allowedEmails || []);
+      this.forgeAccessMsg.set(`Forge access revoked for ${email}`);
+    } catch (error: any) {
+      this.forgeAccessMsg.set(error.message || 'Failed to revoke Forge access');
+    } finally {
+      this.forgeAccessLoading.set(false);
+      setTimeout(() => this.forgeAccessMsg.set(''), 3500);
+    }
   }
 
   async loginWithGoogle() {
