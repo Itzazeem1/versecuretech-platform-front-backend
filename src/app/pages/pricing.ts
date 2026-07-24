@@ -1,27 +1,31 @@
 import { Component, afterNextRender } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { HeaderComponent } from '../components/header';
 import { FooterComponent } from '../components/footer';
+import { ThreeBackgroundComponent } from '../components/three-bg';
+import { TranslatePipe } from '../pipes/translate.pipe';
 import gsap from 'gsap';
 
 @Component({
   selector: 'app-pricing',
   standalone: true,
-  imports: [CommonModule, HeaderComponent, FooterComponent],
+  imports: [CommonModule, RouterLink, HeaderComponent, FooterComponent, ThreeBackgroundComponent, TranslatePipe],
   template: `
+    <app-three-bg></app-three-bg>
     <app-header></app-header>
     
     <div class="min-h-screen pt-32 pb-20 px-8 relative z-10">
       <div class="max-w-7xl mx-auto">
         
         <div class="text-center mb-20 pricing-intro opacity-0 translate-y-8">
-          <span class="text-xs font-mono tracking-widest uppercase text-[var(--accent-main)] mb-4 block">Forge AI</span>
+          <span class="text-xs font-mono tracking-widest uppercase text-[var(--accent-main)] mb-4 block">{{ 'PRICING.FORGE_AI' | translate }}</span>
           <h1 class="text-5xl md:text-7xl font-display font-medium tracking-tight mb-6">
-            Intelligence at <br />
-            <span class="text-[var(--text-muted)]">your fingertips.</span>
+            {{ 'PRICING.TITLE' | translate }} <br />
+            <span class="text-[var(--text-muted)]">{{ 'PRICING.TITLE_HIGHLIGHT' | translate }}</span>
           </h1>
           <p class="text-lg text-[var(--text-muted)] max-w-2xl mx-auto">
-            Unlock the full potential of Forge AI. Choose the plan that fits your engineering and security needs.
+            {{ 'PRICING.SUBTITLE' | translate }}
           </p>
         </div>
 
@@ -30,8 +34,8 @@ import gsap from 'gsap';
           <!-- Basic Plan -->
           <div class="glass-panel p-10 rounded-[2rem] border border-[var(--text-primary)]/10 flex flex-col relative overflow-hidden group hover:border-[var(--text-primary)]/30 transition-all duration-500">
             <div class="mb-8">
-              <h3 class="text-2xl font-display font-medium mb-2">Basic</h3>
-              <p class="text-sm text-[var(--text-muted)]">Perfect for exploring our public services.</p>
+              <h3 class="text-2xl font-display font-medium mb-2">{{ 'PRICING.BASIC' | translate }}</h3>
+              <p class="text-sm text-[var(--text-muted)]">{{ 'PRICING.BASIC_DESC' | translate }}</p>
             </div>
             <div class="mb-8">
               <span class="text-5xl font-display font-medium">$0</span>
@@ -40,33 +44,33 @@ import gsap from 'gsap';
             <ul class="space-y-4 mb-10 flex-1">
               <li class="flex items-center gap-3 text-sm">
                 <span class="material-icons text-[16px] text-green-400">check_circle</span>
-                Public Service Access
+                {{ 'PRICING.PUBLIC_ACCESS' | translate }}
               </li>
               <li class="flex items-center gap-3 text-sm">
                 <span class="material-icons text-[16px] text-green-400">check_circle</span>
-                Standard Support
+                {{ 'PRICING.STANDARD_SUPPORT' | translate }}
               </li>
               <li class="flex items-center gap-3 text-sm text-[var(--text-muted)]">
                 <span class="material-icons text-[16px]">remove_circle_outline</span>
-                No Forge AI Access
+                {{ 'PRICING.NO_FORGE_AI' | translate }}
               </li>
             </ul>
             
             <a routerLink="/login" class="w-full py-4 rounded-xl border border-[var(--text-primary)]/20 text-center font-bold text-xs uppercase tracking-widest hover:bg-[var(--text-primary)]/5 transition-colors">
-              Get Started
+              {{ 'PRICING.GET_STARTED' | translate }}
             </a>
           </div>
 
           <!-- Forge AI Plan (Featured) -->
-          <div class="glass-panel p-10 rounded-[2rem] border border-[var(--accent-main)] relative overflow-hidden group transform md:-translate-y-4 shadow-[0_20px_40px_rgba(var(--accent-main-rgb),0.2)]">
+            <div class="glass-panel p-10 rounded-[2rem] border border-[var(--accent-main)] relative overflow-hidden group transform md:-translate-y-4 shadow-[0_20px_40px_rgba(108,140,255,0.2)]">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-[var(--accent-main)] to-transparent opacity-50"></div>
             <div class="absolute top-4 right-4 bg-[var(--accent-main)]/10 text-[var(--accent-main)] text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-[var(--accent-main)]/20">
-              Most Popular
+              {{ 'PRICING.MOST_POPULAR' | translate }}
             </div>
             
             <div class="mb-8">
-              <h3 class="text-2xl font-display font-medium mb-2">Forge AI Bundle</h3>
-              <p class="text-sm text-[var(--text-muted)]">Next-gen AI engineering environment.</p>
+              <h3 class="text-2xl font-display font-medium mb-2">{{ 'PRICING.FORGE_BUNDLE' | translate }}</h3>
+              <p class="text-sm text-[var(--text-muted)]">{{ 'PRICING.FORGE_BUNDLE_DESC' | translate }}</p>
             </div>
             <div class="mb-8">
               <span class="text-5xl font-display font-medium">$9.99</span>
@@ -76,35 +80,43 @@ import gsap from 'gsap';
             <ul class="space-y-4 mb-10 flex-1">
               <li class="flex items-center gap-3 text-sm">
                 <span class="material-icons text-[16px] text-green-400">check_circle</span>
-                Lifetime Forge AI Access
+                {{ 'PRICING.LIFETIME_ACCESS' | translate }}
               </li>
               <li class="flex items-center gap-3 text-sm">
                 <span class="material-icons text-[16px] text-green-400">check_circle</span>
-                Advanced AI Code Generation
+                {{ 'PRICING.BUNDLE_CREDITS' | translate }}
               </li>
               <li class="flex items-center gap-3 text-sm">
                 <span class="material-icons text-[16px] text-green-400">check_circle</span>
-                Engineering Architecture Tools
+                {{ 'PRICING.CREDIT_REFILL' | translate }}
               </li>
               <li class="flex items-center gap-3 text-sm">
                 <span class="material-icons text-[16px] text-green-400">check_circle</span>
-                Zero Monthly Subscription
+                {{ 'PRICING.ADVANCED_AI' | translate }}
+              </li>
+              <li class="flex items-center gap-3 text-sm">
+                <span class="material-icons text-[16px] text-green-400">check_circle</span>
+                {{ 'PRICING.ENGINEERING_TOOLS' | translate }}
+              </li>
+              <li class="flex items-center gap-3 text-sm">
+                <span class="material-icons text-[16px] text-green-400">check_circle</span>
+                {{ 'PRICING.ZERO_SUBSCRIPTION' | translate }}
               </li>
             </ul>
             
             <a routerLink="/login" class="w-full py-4 rounded-xl bg-[var(--text-primary)] text-[var(--bg-main)] text-center font-bold text-xs uppercase tracking-widest hover:scale-105 transition-transform inline-block">
-              Buy Lifetime Access
+              {{ 'PRICING.BUY_LIFETIME' | translate }}
             </a>
           </div>
 
           <!-- Enterprise Plan -->
-          <div class="glass-panel p-10 rounded-[2rem] border border-[var(--text-primary)]/10 flex flex-col relative overflow-hidden group hover:border-[var(--text-primary)]/30 transition-all duration-500 opacity-80">
+          <div class="glass-panel p-10 rounded-[2rem] border border-[var(--text-primary)]/10 flex flex-col relative overflow-hidden group hover:border-[var(--text-primary)]/30 transition-all duration-500">
             <div class="absolute top-4 right-4 bg-[var(--text-primary)]/10 text-[var(--text-primary)] text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full border border-[var(--text-primary)]/20">
-              Coming Soon
+              {{ 'PRICING.CUSTOM' | translate }}
             </div>
             <div class="mb-8">
-              <h3 class="text-2xl font-display font-medium mb-2">Enterprise</h3>
-              <p class="text-sm text-[var(--text-muted)]">Custom solutions for large organizations.</p>
+              <h3 class="text-2xl font-display font-medium mb-2">{{ 'PRICING.ENTERPRISE' | translate }}</h3>
+              <p class="text-sm text-[var(--text-muted)]">{{ 'PRICING.ENTERPRISE_DESC' | translate }}</p>
             </div>
             <div class="mb-8">
               <span class="text-5xl font-display font-medium">Custom</span>
@@ -112,30 +124,38 @@ import gsap from 'gsap';
             
             <ul class="space-y-4 mb-10 flex-1">
               <li class="flex items-center gap-3 text-sm">
-                <span class="material-icons text-[16px] text-[var(--text-muted)]">check_circle</span>
-                Everything in Pro
+                <span class="material-icons text-[16px] text-green-400">check_circle</span>
+                {{ 'PRICING.EVERYTHING_PRO' | translate }}
               </li>
               <li class="flex items-center gap-3 text-sm">
-                <span class="material-icons text-[16px] text-[var(--text-muted)]">check_circle</span>
-                Dedicated Account Manager
+                <span class="material-icons text-[16px] text-green-400">check_circle</span>
+                {{ 'PRICING.ENTERPRISE_CREDITS' | translate }}
               </li>
               <li class="flex items-center gap-3 text-sm">
-                <span class="material-icons text-[16px] text-[var(--text-muted)]">check_circle</span>
-                Custom API Integrations
+                <span class="material-icons text-[16px] text-green-400">check_circle</span>
+                {{ 'PRICING.CREDIT_REFILL' | translate }}
               </li>
               <li class="flex items-center gap-3 text-sm">
-                <span class="material-icons text-[16px] text-[var(--text-muted)]">check_circle</span>
-                Enterprise-grade security & compliance
+                <span class="material-icons text-[16px] text-green-400">check_circle</span>
+                {{ 'PRICING.ACCOUNT_MANAGER' | translate }}
               </li>
               <li class="flex items-center gap-3 text-sm">
-                <span class="material-icons text-[16px] text-[var(--text-muted)]">check_circle</span>
-                SLA guarantees
+                <span class="material-icons text-[16px] text-green-400">check_circle</span>
+                {{ 'PRICING.API_INTEGRATIONS' | translate }}
+              </li>
+              <li class="flex items-center gap-3 text-sm">
+                <span class="material-icons text-[16px] text-green-400">check_circle</span>
+                {{ 'PRICING.ENTERPRISE_SECURITY' | translate }}
+              </li>
+              <li class="flex items-center gap-3 text-sm">
+                <span class="material-icons text-[16px] text-green-400">check_circle</span>
+                {{ 'PRICING.SLA' | translate }}
               </li>
             </ul>
             
-            <button disabled class="w-full py-4 rounded-xl border border-[var(--text-primary)]/20 text-center font-bold text-xs uppercase tracking-widest bg-[var(--text-primary)]/5 text-[var(--text-muted)] cursor-not-allowed">
-              Coming Soon
-            </button>
+            <a routerLink="/contact" [queryParams]="{service: 'Enterprise Forge AI'}" class="w-full py-4 rounded-xl border border-[var(--text-primary)]/20 text-center font-bold text-xs uppercase tracking-widest hover:bg-[var(--text-primary)]/5 transition-colors">
+              {{ 'PRICING.CONTACT_SALES' | translate }}
+            </a>
           </div>
 
         </div>

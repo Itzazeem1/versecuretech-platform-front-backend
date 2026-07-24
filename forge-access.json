@@ -1,0 +1,30 @@
+{
+  "allowedEmails": [
+    "buyer.test@example.com",
+    "makhdumazeem67@gmail.com",
+    "test@example.com"
+  ],
+  "developerEmails": [],
+  "adminEmails": [],
+  "clientMeta": {
+    "test@example.com": {
+      "plan": "forge_bundle",
+      "credits": 100,
+      "purchases": 1
+    },
+    "buyer.test@example.com": {
+      "plan": "forge_bundle",
+      "credits": 100,
+      "purchases": 1,
+      "lastPackCredits": 100,
+      "updatedAt": "2026-07-24T13:36:21.160Z"
+    },
+    "makhdumazeem67@gmail.com": {
+      "plan": "enterprise",
+      "credits": 500,
+      "purchases": 1,
+      "lastPackCredits": 500,
+      "updatedAt": "2026-07-24T13:40:00.157Z"
+    }
+  }
+}

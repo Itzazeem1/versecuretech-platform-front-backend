@@ -1,6 +1,7 @@
 import { Component, signal, inject, afterNextRender, ChangeDetectionStrategy, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { StoreService } from '../services/store.service';
 import { SupabaseService } from '../services/supabase.service';
 import { ForgeStateService } from '../services/forge-state.service';
@@ -8,68 +9,78 @@ import { HttpClient } from '@angular/common/http';
 import { HeaderComponent } from '../components/header';
 import { FooterComponent } from '../components/footer';
 import { ThreeBackgroundComponent } from '../components/three-bg';
+import { OauthButtonsComponent } from '../components/oauth-buttons';
+import { TranslatePipe } from '../pipes/translate.pipe';
 import gsap from 'gsap';
+
+interface ForgeSeat {
+  email: string;
+  role: 'developer' | 'client';
+  plan: string | null;
+  credits: number;
+  purchases?: number;
+  label: string;
+  revocable: boolean;
+  isAdmin?: boolean;
+}
 
 @Component({
   selector: 'app-admin',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule, HeaderComponent, FooterComponent, ThreeBackgroundComponent],
+  imports: [CommonModule, FormsModule, RouterLink, HeaderComponent, FooterComponent, ThreeBackgroundComponent, OauthButtonsComponent, TranslatePipe],
   template: `
     <app-three-bg></app-three-bg>
     <app-header></app-header>
     
     <div class="min-h-screen pt-40 pb-20 text-[var(--text-primary)] flex flex-col items-center justify-center p-6 relative z-10">
+
+      @if (supabase.tempAdminBypassEnabled) {
+        <div class="w-full max-w-7xl mb-6 px-4 py-3 rounded-xl border border-amber-400/40 bg-amber-400/10 text-amber-200 text-xs font-mono uppercase tracking-widest text-center">
+          TEMP ADMIN BYPASS ON — tell the agent “restore security” when you’re done
+        </div>
+      }
       
       @if (!supabase.isAdmin()) {
         <div class="w-full max-w-md glass-panel p-10 rounded-[2rem] border border-[var(--text-primary)]/10 relative overflow-hidden glow-hover">
           <div class="absolute top-0 right-0 w-64 h-64 bg-[var(--accent-main)] rounded-full blur-[100px] opacity-20 pointer-events-none"></div>
           
           <div class="text-center mb-10 relative z-10">
-            <h1 class="text-3xl font-display font-medium mb-2">Supabase Auth</h1>
-            <p class="text-[var(--text-muted)] text-sm">Secure admin gateway</p>
+            <h1 class="text-3xl font-display font-medium mb-2">{{ 'ADMIN.GATEWAY_TITLE' | translate }}</h1>
+            <p class="text-[var(--text-muted)] text-sm">{{ 'ADMIN.GATEWAY_SUBTITLE' | translate }}</p>
           </div>
 
           @if (supabase.isLoggedIn() && !supabase.isAdmin()) {
             <div class="text-center py-8 relative z-10">
               <span class="material-icons text-5xl text-red-500 mb-4">gavel</span>
-              <h2 class="text-xl font-bold mb-2">Access Denied</h2>
-              <p class="text-sm text-[var(--text-muted)] mb-6">Your account does not have administrator privileges.</p>
+              <h2 class="text-xl font-bold mb-2">{{ 'ADMIN.ACCESS_DENIED' | translate }}</h2>
+              <p class="text-sm text-[var(--text-muted)] mb-6">{{ 'ADMIN.ACCESS_DENIED_DESC' | translate }}</p>
               <button (click)="logout()" class="w-full py-3 rounded-xl border border-[var(--text-primary)]/20 hover:bg-[var(--text-primary)]/10 transition-colors text-xs font-bold uppercase tracking-widest">
-                Sign Out
+                {{ 'ADMIN.SIGN_OUT' | translate }}
               </button>
             </div>
           } @else {
             <form (ngSubmit)="loginWithEmail()" class="relative z-10 flex flex-col gap-6">
               <div>
-                <label for="admin-email" class="block text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-2">Admin Email</label>
+                <label for="admin-email" class="block text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-2">{{ 'ADMIN.ADMIN_EMAIL' | translate }}</label>
                 <input id="admin-email" type="email" [ngModel]="email()" (ngModelChange)="email.set($event)" name="email" required class="w-full bg-[var(--bg-secondary)] border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)] transition-colors" placeholder="Admin email">
               </div>
               <div>
-                <label for="admin-password" class="block text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-2">Password</label>
+                <label for="admin-password" class="block text-xs uppercase tracking-widest font-mono text-[var(--text-muted)] mb-2">{{ 'ADMIN.PASSWORD' | translate }}</label>
                 <input id="admin-password" type="password" [ngModel]="password()" (ngModelChange)="password.set($event)" name="password" required class="w-full bg-[var(--bg-secondary)] border border-[var(--text-primary)]/10 rounded-xl px-4 py-3 text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-main)] transition-colors" placeholder="••••••••">
               </div>
               
               <button type="submit" [disabled]="loading()" class="w-full py-4 rounded-full bg-[var(--text-primary)] text-[var(--bg-main)] font-bold tracking-widest uppercase text-xs hover:bg-[var(--accent-main)] transition-colors disabled:opacity-50 flex justify-center items-center gap-2">
-                {{ loading() ? 'Authenticating...' : 'Sign In with Email' }}
+                {{ loading() ? ('ADMIN.AUTHENTICATING' | translate) : ('ADMIN.SIGN_IN_EMAIL' | translate) }}
               </button>
               
               <div class="flex items-center gap-4 my-2">
                 <div class="h-px bg-[var(--text-primary)]/10 flex-1"></div>
-                <span class="text-xs text-[var(--text-muted)] uppercase tracking-widest">OR</span>
+                <span class="text-xs text-[var(--text-muted)] uppercase tracking-widest">{{ 'ADMIN.OR' | translate }}</span>
                 <div class="h-px bg-[var(--text-primary)]/10 flex-1"></div>
               </div>
 
-              <div class="flex gap-4">
-                <button type="button" (click)="loginWithGoogle()" class="flex-1 py-3 rounded-xl border border-[var(--text-primary)]/10 hover:border-[var(--text-primary)]/30 hover:bg-[var(--bg-secondary)] transition-all flex justify-center items-center gap-2">
-                  <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" class="w-5 h-5">
-                  <span class="text-xs font-bold tracking-wider">Google</span>
-                </button>
-                <button type="button" (click)="loginWithGithub()" class="flex-1 py-3 rounded-xl border border-[var(--text-primary)]/10 hover:border-[var(--text-primary)]/30 hover:bg-[var(--bg-secondary)] transition-all flex justify-center items-center gap-2">
-                  <img src="https://www.svgrepo.com/show/512317/github-142.svg" alt="GitHub" class="w-5 h-5 invert">
-                  <span class="text-xs font-bold tracking-wider">GitHub</span>
-                </button>
-              </div>
+              <app-oauth-buttons [compact]="true" (googleClick)="loginWithGoogle()" (githubClick)="loginWithGithub()" />
 
               @if (error()) {
                 <p class="text-red-400 text-sm mt-2 text-center font-light">{{ error() }}</p>
@@ -82,16 +93,39 @@ import gsap from 'gsap';
         <div class="w-full max-w-7xl relative z-10 admin-dashboard-anim">
           <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-4">
             <div>
-              <h2 class="text-4xl font-display font-medium mb-2">Command Center</h2>
+              <h2 class="text-4xl font-display font-medium mb-2">{{ 'ADMIN.COMMAND_CENTER' | translate }}</h2>
               <p class="text-[var(--text-muted)] text-sm font-mono flex items-center gap-2">
                 <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> 
-                {{ supabase.isConnected() ? 'Supabase Connected' : 'Connecting to DB...' }}
+                {{ supabase.isConnected() ? ('ADMIN.CONNECTED' | translate) : ('ADMIN.CONNECTING' | translate) }}
               </p>
             </div>
             <button (click)="logout()" class="px-6 py-2 rounded-full border border-[var(--text-primary)]/20 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-primary)] transition-all text-xs uppercase tracking-widest font-mono">
-              Disconnect
+              {{ 'ADMIN.DISCONNECT' | translate }}
             </button>
           </div>
+
+          @if (supabase.tempAdminBypassEnabled) {
+            <div class="glass-panel p-8 rounded-[2rem] border border-amber-400/30 mb-8">
+              <h3 class="font-medium text-xl mb-2">Reset password (Supabase email link)</h3>
+              <p class="text-sm text-[var(--text-muted)] mb-6">
+                This unlocks the panel without login. To fix email/password sign-in, send a reset link, or sign in with Google then use Security Settings → Update Password below.
+              </p>
+              <div class="flex flex-col sm:flex-row gap-3">
+                <input type="email" [ngModel]="email()" (ngModelChange)="email.set($event)" class="flex-1 bg-transparent border border-[var(--text-primary)]/20 rounded-xl px-4 py-3 text-sm outline-none focus:border-amber-300" placeholder="your@email.com" />
+                <button type="button" (click)="sendPasswordReset()" [disabled]="updatingPassword() || !email()" class="px-6 py-3 rounded-xl bg-amber-400/20 border border-amber-400/40 text-xs font-bold uppercase tracking-widest hover:bg-amber-400/30 disabled:opacity-50 shrink-0">
+                  {{ updatingPassword() ? 'Sending…' : 'Send reset email' }}
+                </button>
+              </div>
+              <p class="text-[11px] text-[var(--text-muted)] mt-4 leading-relaxed">
+                Reset links go to <span class="text-amber-200">http://localhost:4200/login</span>.
+                In Supabase → Authentication → URL Configuration, add that URL under Redirect URLs
+                (otherwise the email will open the live site).
+              </p>
+              @if (passwordMsg()) {
+                <p class="text-sm mt-4" [class.text-green-400]="passwordSuccess()" [class.text-red-400]="!passwordSuccess()">{{ passwordMsg() }}</p>
+              }
+            </div>
+          }
           
           <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
@@ -292,48 +326,109 @@ import gsap from 'gsap';
               </div>
 
               <!-- Forge AI Access Control -->
-              <div class="glass-panel p-8 rounded-[2rem] border border-cyan-400/20">
-                <div class="flex items-center gap-3 mb-6">
-                  <span class="material-icons text-cyan-300">auto_awesome</span>
-                  <div>
-                    <h3 class="font-medium text-xl">Forge AI Access</h3>
-                    <p class="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-mono">Grant or revoke builder seats</p>
+              <div class="glass-panel p-8 md:p-10 rounded-[2rem] border border-cyan-400/20">
+                <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
+                  <div class="flex items-start gap-4">
+                    <span class="material-icons text-cyan-300 text-2xl mt-0.5">auto_awesome</span>
+                    <div class="space-y-1.5">
+                      <h3 class="font-medium text-xl tracking-tight">Forge AI Access</h3>
+                      <p class="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-mono leading-relaxed">Grant or revoke builder seats</p>
+                    </div>
                   </div>
+                  <a routerLink="/pricing" class="self-start text-[10px] uppercase tracking-widest font-mono text-cyan-300 hover:text-cyan-100 border border-cyan-300/30 rounded-full px-4 py-2 shrink-0">
+                    Pricing plans
+                  </a>
                 </div>
 
-                <div class="flex gap-2 mb-5">
-                  <input
-                    type="email"
-                    [ngModel]="forgeAccessEmail()"
-                    (ngModelChange)="forgeAccessEmail.set($event)"
-                    class="flex-1 bg-transparent border border-[var(--text-primary)]/20 rounded-xl px-4 py-3 text-sm focus:border-cyan-300 outline-none"
-                    placeholder="client@email.com" />
+                <div class="flex flex-col gap-5 mb-8">
+                  <div class="flex flex-col gap-2">
+                    <label class="text-[10px] uppercase tracking-widest font-mono text-[var(--text-muted)]">Client email</label>
+                    <input
+                      type="email"
+                      [ngModel]="forgeAccessEmail()"
+                      (ngModelChange)="forgeAccessEmail.set($event)"
+                      class="w-full bg-transparent border border-[var(--text-primary)]/20 rounded-2xl px-5 py-3.5 text-sm focus:border-cyan-300 outline-none"
+                      placeholder="client@email.com" />
+                  </div>
+
+                  <div class="grid grid-cols-1 gap-5">
+                    <div class="flex flex-col gap-2">
+                      <label class="text-[10px] uppercase tracking-widest font-mono text-[var(--text-muted)]">Access plan</label>
+                      <select
+                        [ngModel]="forgeAccessPlan()"
+                        (ngModelChange)="onForgePlanChange($event)"
+                        class="w-full bg-[#0a0a0a] border border-[var(--text-primary)]/20 rounded-2xl px-5 py-3.5 text-xs uppercase tracking-widest focus:border-cyan-300 outline-none">
+                        <option value="forge_bundle">Forge Bundle — 100 credits</option>
+                        <option value="enterprise">Enterprise (custom) — 500+ credits</option>
+                        <option value="developer">Developer — admin panel + unlimited</option>
+                      </select>
+                    </div>
+
+                    <div class="flex flex-col gap-2">
+                      <label class="text-[10px] uppercase tracking-widest font-mono text-[var(--text-muted)]">Credits pack</label>
+                      @if (forgeAccessPlan() !== 'developer') {
+                        <input
+                          type="number"
+                          min="1"
+                          [ngModel]="forgeAccessCredits()"
+                          (ngModelChange)="forgeAccessCredits.set(+$event || packDefaultForPlan())"
+                          class="w-full bg-transparent border border-[var(--text-primary)]/20 rounded-2xl px-5 py-3.5 text-sm focus:border-cyan-300 outline-none"
+                          [attr.placeholder]="forgeAccessPlan() === 'enterprise' ? 'Credits (default 500)' : 'Credits (default 100)'" />
+                      } @else {
+                        <div class="flex items-center px-5 py-3.5 rounded-2xl border border-white/10 text-[10px] uppercase tracking-widest text-[var(--text-muted)] min-h-[52px]">
+                          Unlimited credits
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  @if (forgeAccessPlan() === 'forge_bundle') {
+                    <p class="text-[11px] text-[var(--text-muted)] leading-relaxed px-1">
+                      Manual grant for <a routerLink="/pricing" class="text-cyan-300 hover:underline">Forge AI Bundle ($9.99)</a>.
+                      Granting the same email again <strong class="text-[var(--text-primary)] font-medium">refills</strong> by adding another 100-credit pack.
+                    </p>
+                  } @else if (forgeAccessPlan() === 'enterprise') {
+                    <p class="text-[11px] text-[var(--text-muted)] leading-relaxed px-1">
+                      Manual grant for <a routerLink="/pricing" class="text-cyan-300 hover:underline">Enterprise (custom)</a> — more credits than Forge Bundle.
+                      Re-granting the same email also refills by adding another pack.
+                    </p>
+                  } @else if (forgeAccessPlan() === 'developer') {
+                    <p class="text-[11px] text-[var(--text-muted)] leading-relaxed px-1">
+                      Grants <strong class="text-[var(--text-primary)] font-medium">Admin panel access</strong> plus Forge AI with unlimited credits.
+                    </p>
+                  }
+
                   <button
                     (click)="grantForgeAccess()"
                     [disabled]="forgeAccessLoading() || !forgeAccessEmail().trim()"
-                    class="px-4 rounded-xl bg-cyan-300 text-black text-xs font-bold uppercase tracking-widest disabled:opacity-40">
-                    Grant
+                    class="w-full mt-1 py-4 rounded-2xl bg-cyan-300 text-black text-xs font-bold uppercase tracking-widest disabled:opacity-40">
+                    {{ grantButtonLabel() }}
                   </button>
                 </div>
 
-                <div class="space-y-2 max-h-52 overflow-y-auto pr-1 custom-scrollbar">
-                  @for (email of forgeAccessList(); track email) {
-                    <div class="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
-                      <div class="min-w-0">
-                        <div class="truncate text-xs text-[var(--text-primary)]">{{ email }}</div>
-                        <div class="text-[9px] uppercase tracking-widest text-[var(--text-muted)]">{{ email === 'azeem.makhdum6@gmail.com' || email === 'abbas585@gmail.com' ? 'Developer / unlimited credits' : 'Limited credits' }}</div>
+                <div class="border-t border-white/10 pt-6">
+                  <p class="text-[10px] uppercase tracking-widest font-mono text-[var(--text-muted)] mb-4">Active seats</p>
+                  <div class="space-y-3 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+                    @for (seat of forgeAccessSeats(); track seat.email) {
+                      <div class="flex items-center justify-between gap-4 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5">
+                        <div class="min-w-0 space-y-1">
+                          <div class="truncate text-sm text-[var(--text-primary)]">{{ seat.email }}</div>
+                          <div class="text-[9px] uppercase tracking-widest leading-relaxed" [ngClass]="seat.role === 'developer' ? 'text-cyan-300' : 'text-[var(--text-muted)]'">
+                            {{ seat.label }}
+                          </div>
+                        </div>
+                        @if (seat.revocable) {
+                          <button (click)="revokeForgeAccess(seat.email)" class="text-[10px] uppercase tracking-widest text-red-300 hover:text-red-200 shrink-0 px-2 py-1">Revoke</button>
+                        }
                       </div>
-                      @if (email !== 'azeem.makhdum6@gmail.com' && email !== 'abbas585@gmail.com') {
-                        <button (click)="revokeForgeAccess(email)" class="text-[10px] uppercase tracking-widest text-red-300 hover:text-red-200">Revoke</button>
-                      }
-                    </div>
-                  } @empty {
-                    <p class="text-xs text-[var(--text-muted)] text-center py-4">No Forge seats loaded yet.</p>
-                  }
+                    } @empty {
+                      <p class="text-xs text-[var(--text-muted)] text-center py-8">No Forge seats loaded yet.</p>
+                    }
+                  </div>
                 </div>
 
                 @if (forgeAccessMsg()) {
-                  <p class="mt-4 text-xs text-center text-cyan-200">{{ forgeAccessMsg() }}</p>
+                  <p class="mt-6 text-xs text-center text-cyan-200 leading-relaxed">{{ forgeAccessMsg() }}</p>
                 }
               </div>
 
@@ -379,7 +474,9 @@ export class AdminComponent {
   passwordMsg = signal('');
   passwordSuccess = signal(false);
   forgeAccessEmail = signal('');
-  forgeAccessList = signal<string[]>([]);
+  forgeAccessPlan = signal<'forge_bundle' | 'enterprise' | 'developer'>('forge_bundle');
+  forgeAccessCredits = signal(100);
+  forgeAccessSeats = signal<ForgeSeat[]>([]);
   forgeAccessMsg = signal('');
   forgeAccessLoading = signal(false);
 
@@ -395,8 +492,16 @@ export class AdminComponent {
   private defaultBrandIdentity = "At the core of our software house lies a simple yet powerful purpose: to transform ideas into impactful digital solutions that drive growth, efficiency, and innovation. Our platform exists to bridge the gap between vision and execution—empowering businesses, startups, and individuals to bring their concepts to life through technology that is not only functional, but meaningful. We are committed to delivering high-quality software solutions tailored to the unique needs of each client. Whether it’s building scalable web applications, crafting intuitive mobile experiences, or developing robust backend systems, our goal is to create products that solve real-world problems and deliver long-term value. We don’t just build software—we build systems that enhance productivity, elevate user experience, and create opportunities for success in a rapidly evolving digital landscape. Our approach is rooted in creativity, precision, and collaboration. We believe that great products are born from a deep understanding of user needs combined with technical excellence. That’s why we focus on clean design, efficient performance, and reliable architecture in every project we undertake. Transparency, trust, and continuous improvement are at the heart of everything we do. This platform serves as a gateway to our expertise, showcasing our capabilities, our work, and our commitment to innovation. It is a space where ideas are nurtured, challenges are solved, and digital transformation becomes achievable. Our mission is not just to deliver software—but to empower our clients to grow, compete, and thrive in the modern world.";
 
   constructor() {
+    if (this.supabase.tempAdminBypassEnabled) {
+      this.email.set(this.supabase.tempAdminEmail);
+      this.supabase.applyTempAdminBypass('admin-page');
+    }
+
     afterNextRender(() => {
       this.supabase.checkSession();
+      if (this.supabase.tempAdminBypassEnabled) {
+        this.supabase.applyTempAdminBypass('admin-after-render');
+      }
       if (this.supabase.isAdmin()) {
         this.loadSection(this.selectedSection());
         this.loadForgeAccessList();
@@ -437,52 +542,172 @@ export class AdminComponent {
       setTimeout(() => this.animateDashboard(), 100);
       this.loadForgeAccessList();
     } else {
-      this.error.set((error as Error).message || 'Access Denied: Invalid credentials.');
+      const msg = (error as { message?: string })?.message || 'Access Denied: Invalid credentials.';
+      console.error('[Admin Login]', error);
+      this.error.set(msg);
     }
     this.loading.set(false);
   }
 
   private adminEmail(): string {
-    return this.supabase.currentUser()?.email || this.email();
+    return this.supabase.currentUser()?.email
+      || this.email()
+      || (this.supabase.tempAdminBypassEnabled ? this.supabase.tempAdminEmail : '');
+  }
+
+  async sendPasswordReset() {
+    const target = (this.email() || this.supabase.tempAdminEmail).trim();
+    if (!target) return;
+    this.updatingPassword.set(true);
+    this.passwordMsg.set('');
+    const { error } = await this.supabase.sendPasswordReset(target);
+    if (error) {
+      this.passwordSuccess.set(false);
+      this.passwordMsg.set((error as { message?: string }).message || 'Failed to send reset email.');
+    } else {
+      this.passwordSuccess.set(true);
+      this.passwordMsg.set(`Reset email sent to ${target}. Check inbox/spam.`);
+    }
+    this.updatingPassword.set(false);
+  }
+
+  async updatePassword() {
+    if (!this.newPassword()) return;
+    this.updatingPassword.set(true);
+    this.passwordMsg.set('');
+    
+    const { error } = await this.supabase.updatePassword(this.newPassword());
+    
+    if (error) {
+      this.passwordSuccess.set(false);
+      this.passwordMsg.set((error as { message?: string }).message || 'Failed to update password. Sign in with Google first, then try again.');
+    } else {
+      this.passwordSuccess.set(true);
+      this.passwordMsg.set('Password updated successfully!');
+      this.newPassword.set('');
+    }
+    
+    this.updatingPassword.set(false);
+    setTimeout(() => this.passwordMsg.set(''), 4000);
   }
 
   async loadForgeAccessList() {
-    if (!this.supabase.isAdmin() || this.forgeAccessLoading()) return;
+    if (!this.supabase.isAdmin()) return;
     this.forgeAccessLoading.set(true);
+    this.forgeAccessMsg.set('');
     try {
-      const response = await fetch(`/api/admin/forge-access?adminEmail=${encodeURIComponent(this.adminEmail())}`);
-      const data = await response.json();
-      if (response.ok) {
-        this.forgeAccessList.set(data.allowedEmails || []);
+      const admin = this.adminEmail();
+      if (!admin) {
+        this.forgeAccessMsg.set('Admin email missing — re-login to admin.');
+        return;
       }
-    } catch (error) {
+      const response = await fetch(`/api/admin/forge-access?adminEmail=${encodeURIComponent(admin)}`);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || `Could not load seats (${response.status}). Is the backend running?`);
+      }
+      const seats = Array.isArray(data.seats) ? data.seats : [];
+      this.forgeAccessSeats.set(seats);
+      if (!seats.length && Array.isArray(data.allowedEmails) && data.allowedEmails.length) {
+        // Fallback for older API shapes
+        this.forgeAccessSeats.set(
+          data.allowedEmails.map((email: string) => ({
+            email,
+            role: 'client' as const,
+            plan: 'forge_bundle',
+            credits: 100,
+            label: `Access · ${email}`,
+            revocable: email !== 'azeem.makhdum6@gmail.com' && email !== 'abbas585@gmail.com'
+          }))
+        );
+      }
+    } catch (error: any) {
       console.warn('Forge access list failed', error);
+      this.forgeAccessMsg.set(error.message || 'Failed to load Forge seats — start backend with npm start');
     } finally {
       this.forgeAccessLoading.set(false);
     }
   }
 
+  packDefaultForPlan(plan = this.forgeAccessPlan()): number {
+    if (plan === 'enterprise') return 500;
+    if (plan === 'developer') return 999999;
+    return 100;
+  }
+
+  onForgePlanChange(plan: 'forge_bundle' | 'enterprise' | 'developer') {
+    this.forgeAccessPlan.set(plan);
+    if (plan !== 'developer') {
+      this.forgeAccessCredits.set(this.packDefaultForPlan(plan));
+    }
+  }
+
+  grantButtonLabel(): string {
+    const plan = this.forgeAccessPlan();
+    if (plan === 'developer') return 'Grant Admin / Developer Access';
+    if (plan === 'enterprise') return 'Grant / Refill Enterprise Credits';
+    return 'Grant / Refill Forge Bundle Credits';
+  }
+
   async grantForgeAccess() {
     const email = this.forgeAccessEmail().trim().toLowerCase();
-    if (!email) return;
+    if (!email) {
+      this.forgeAccessMsg.set('Enter a client email first.');
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      this.forgeAccessMsg.set('Enter a valid email address.');
+      return;
+    }
+    const admin = this.adminEmail();
+    if (!admin) {
+      this.forgeAccessMsg.set('Admin email missing — re-login to admin.');
+      return;
+    }
+
     this.forgeAccessLoading.set(true);
     this.forgeAccessMsg.set('');
+    const plan = this.forgeAccessPlan();
+    const role = plan === 'developer' ? 'developer' : 'client';
     try {
       const response = await fetch('/api/admin/forge-access/grant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ adminEmail: this.adminEmail(), email })
+        body: JSON.stringify({
+          adminEmail: admin,
+          email,
+          role,
+          plan: plan === 'developer' ? undefined : plan,
+          credits: plan === 'developer' ? undefined : this.forgeAccessCredits()
+        })
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to grant access');
-      this.forgeAccessList.set(data.allowedEmails || []);
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.error || `Grant failed (${response.status}). Is the backend running on port 4000?`);
+      }
+      this.forgeAccessSeats.set(data.seats || []);
       this.forgeAccessEmail.set('');
-      this.forgeAccessMsg.set(`Forge access granted to ${email}`);
+      const grant = data.grant || {};
+      if (role === 'developer') {
+        this.forgeAccessMsg.set(`Admin panel + unlimited Forge access granted to ${email}`);
+      } else if (grant.refilled) {
+        this.forgeAccessMsg.set(
+          `Credits refilled for ${email}: +${grant.added} → balance ${grant.credits} (${grant.purchases} packs · ${grant.plan})`
+        );
+      } else {
+        this.forgeAccessMsg.set(
+          `${grant.plan === 'enterprise' ? 'Enterprise' : 'Forge Bundle'} access granted to ${email} with ${grant.credits} credits`
+        );
+      }
     } catch (error: any) {
       this.forgeAccessMsg.set(error.message || 'Failed to grant Forge access');
     } finally {
       this.forgeAccessLoading.set(false);
-      setTimeout(() => this.forgeAccessMsg.set(''), 3500);
+      setTimeout(() => {
+        if (this.forgeAccessMsg().includes('granted') || this.forgeAccessMsg().includes('refilled')) {
+          this.forgeAccessMsg.set('');
+        }
+      }, 6000);
     }
   }
 
@@ -497,7 +722,7 @@ export class AdminComponent {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to revoke access');
-      this.forgeAccessList.set(data.allowedEmails || []);
+      this.forgeAccessSeats.set(data.seats || []);
       this.forgeAccessMsg.set(`Forge access revoked for ${email}`);
     } catch (error: any) {
       this.forgeAccessMsg.set(error.message || 'Failed to revoke Forge access');
@@ -596,26 +821,6 @@ export class AdminComponent {
       this.store.toggleAnimations();
       await this.supabase.saveContent('settings_anim', { value: this.store.enableAnimations() });
     }
-  }
-
-  async updatePassword() {
-    if (!this.newPassword()) return;
-    this.updatingPassword.set(true);
-    this.passwordMsg.set('');
-    
-    const { error } = await this.supabase.updatePassword(this.newPassword());
-    
-    if (error) {
-      this.passwordSuccess.set(false);
-      this.passwordMsg.set('Failed to update password.');
-    } else {
-      this.passwordSuccess.set(true);
-      this.passwordMsg.set('Password updated successfully!');
-      this.newPassword.set('');
-    }
-    
-    this.updatingPassword.set(false);
-    setTimeout(() => this.passwordMsg.set(''), 4000);
   }
 
   private animateDashboard() {
