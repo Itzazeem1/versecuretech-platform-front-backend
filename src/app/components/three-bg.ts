@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, inject, afterNextRender, ChangeDetectionStrategy, OnDestroy } from '@angular/core';
+import { Component, ElementRef, ViewChild, inject, afterNextRender, ChangeDetectionStrategy, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 import { StoreService } from '../services/store.service';
@@ -14,17 +14,32 @@ import { StoreService } from '../services/store.service';
       class="fixed inset-0 z-[-1] pointer-events-none transition-opacity duration-1000 bg-[var(--bg-main)]"
       [style.opacity]="store.enable3D() ? store.glowIntensity() : 0"
     >
-      <!-- CSS SVG Noise Overlay applied directly on top of the WebGL canvas -->
-      <div class="absolute inset-0 pointer-events-none mix-blend-overlay opacity-5 flex items-center justify-center">
-        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="width: 100vw; height: 100vh;">
-          <filter id="noiseFilter">
-            <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
-          </filter>
-          <rect width="100%" height="100%" filter="url(#noiseFilter)"/>
-        </svg>
-      </div>
+      @if (useStaticFallback()) {
+        <div class="absolute inset-0 three-static-bg"></div>
+      }
+      @if (!isMobile()) {
+        <div class="absolute inset-0 pointer-events-none mix-blend-overlay opacity-5 flex items-center justify-center">
+          <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none" style="width: 100vw; height: 100vh;">
+            <filter id="noiseFilter">
+              <feTurbulence type="fractalNoise" baseFrequency="0.65" numOctaves="3" stitchTiles="stitch"/>
+            </filter>
+            <rect width="100%" height="100%" filter="url(#noiseFilter)"/>
+          </svg>
+        </div>
+      }
     </div>
-  `
+  `,
+  styles: [`
+    .three-static-bg {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(108, 140, 255, 0.22), transparent 55%),
+        radial-gradient(ellipse 70% 50% at 85% 20%, rgba(138, 108, 255, 0.16), transparent 50%),
+        radial-gradient(ellipse 60% 40% at 60% 90%, rgba(108, 140, 255, 0.10), transparent 55%),
+        linear-gradient(160deg, #0B0F1A 0%, #121826 45%, #0B0F1A 100%);
+    }
+  `]
 })
 export class ThreeBackgroundComponent implements OnDestroy {
   @ViewChild('canvasContainer') canvasContainer!: ElementRef<HTMLDivElement>;
@@ -44,59 +59,69 @@ export class ThreeBackgroundComponent implements OnDestroy {
 
   private targetFPS = 60;
   private lastFrameTime = 0;
-  private isMobile = false;
+  isMobile = signal(false);
+  useStaticFallback = signal(false);
+
+  private boundResize = () => this.onWindowResize();
+  private boundMouseMove = (e: MouseEvent) => this.onMouseMove(e);
+  private boundVisibility = () => this.onVisibilityChange();
 
   constructor() {
     afterNextRender(() => {
-      this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      this.targetFPS = this.isMobile ? 30 : 60; // Throttled on mobile
+      const narrow = window.matchMedia('(max-width: 767px)').matches;
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const touchPrimary = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+      const mobile = narrow || touchPrimary || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      this.isMobile.set(mobile);
+
+      // Mobile/tablet: same brand look via CSS — no continuous WebGL (major perf win)
+      if (mobile || reduceMotion) {
+        this.useStaticFallback.set(true);
+        return;
+      }
+
+      this.targetFPS = 45;
       this.initImmersiveShader();
-      this.setupVisibilityListener();
+      document.addEventListener('visibilitychange', this.boundVisibility);
     });
   }
 
-  private setupVisibilityListener() {
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-        this.animationFrameId = null;
-      } else {
-        if (!this.animationFrameId) this.animate();
-      }
-    });
+  private onVisibilityChange() {
+    if (document.hidden) {
+      if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    } else if (!this.animationFrameId && this.renderer) {
+      this.animate();
+    }
   }
 
   private initImmersiveShader() {
     const container = this.canvasContainer.nativeElement;
 
     this.scene = new THREE.Scene();
-    
-    // Orthographic camera for full screen 2D render
     this.camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
     this.renderer = new THREE.WebGLRenderer({ 
       alpha: true, 
-      antialias: !this.isMobile, // Disable antialiasing on mobile for extra speed
-      powerPreference: "high-performance" 
+      antialias: false,
+      powerPreference: 'high-performance' 
     });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(this.isMobile ? 1.0 : Math.min(window.devicePixelRatio, 1.5)); 
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.25)); 
     container.insertBefore(this.renderer.domElement, container.firstChild);
 
-    // Full screen plane geometry
     const geometry = new THREE.PlaneGeometry(2, 2);
 
-    // Advanced Awwwards-level Fluid Light Shader
     this.material = new THREE.ShaderMaterial({
       uniforms: {
         uTime: { value: 0 },
         uResolution: { value: new THREE.Vector2(window.innerWidth, window.innerHeight) },
         uMouse: { value: new THREE.Vector2(0.5, 0.5) },
         uSpeed: { value: this.store.animationSpeed() },
-        uBgMain: { value: new THREE.Color('#0B0F1A') },      // --bg-main
-        uBgSec: { value: new THREE.Color('#121826') },       // --bg-secondary
-        uAccentMain: { value: new THREE.Color('#6C8CFF') },  // --accent-main
-        uAccentGlow: { value: new THREE.Color('#8A6CFF') },  // --accent-glow
+        uBgMain: { value: new THREE.Color('#0B0F1A') },
+        uBgSec: { value: new THREE.Color('#121826') },
+        uAccentMain: { value: new THREE.Color('#6C8CFF') },
+        uAccentGlow: { value: new THREE.Color('#8A6CFF') },
       },
       vertexShader: `
         varying vec2 vUv;
@@ -118,7 +143,6 @@ export class ThreeBackgroundComponent implements OnDestroy {
 
         varying vec2 vUv;
 
-        // Simplex 2D noise
         vec3 permute(vec3 x) { return mod(((x*34.0)+1.0)*x, 289.0); }
         float snoise(vec2 v){
           const vec4 C = vec4(0.211324865405187, 0.366025403784439, -0.577350269189626, 0.024390243902439);
@@ -145,7 +169,6 @@ export class ThreeBackgroundComponent implements OnDestroy {
         }
 
         void main() {
-          // Normalize coordinates and account for aspect ratio
           vec2 uv = gl_FragCoord.xy / uResolution.xy;
           vec2 p = uv;
           p.x *= uResolution.x / uResolution.y;
@@ -153,27 +176,21 @@ export class ThreeBackgroundComponent implements OnDestroy {
           vec2 mouse = uMouse;
           mouse.x *= uResolution.x / uResolution.y;
 
-          // Cinematic, slow, sweeping fluid noise fields
           float n1 = snoise(p * 1.2 + uTime * 0.05 * uSpeed);
           float n2 = snoise(p * 0.8 - uTime * 0.03 * uSpeed + mouse * 0.2);
           float n3 = snoise(p * 2.5 + vec2(sin(uTime * 0.04), cos(uTime * 0.03)) * uSpeed);
 
-          // Base darkness with subtle secondary shifts
           vec3 color = mix(uBgMain, uBgSec, n1 * 0.5 + 0.5);
 
-          // Add glowing cinematic light blooms
           float glow1 = smoothstep(0.1, 0.9, n2 * 0.5 + 0.5);
           float glow2 = smoothstep(0.4, 0.8, n3 * n1);
 
-          // Mouse interaction light source
           float distToMouse = distance(p, mouse);
           float mouseGlow = exp(-distToMouse * 2.5) * 0.8;
           
-          // Composite the Tesla glowing accents seamlessly into the bg
           color = mix(color, uAccentMain, glow1 * 0.25);
           color = mix(color, uAccentGlow, glow2 * 0.20 + mouseGlow * 0.35);
 
-          // Subtle vignette for cinematic depth
           float vignette = length(uv - vec2(0.5));
           color *= 1.0 - vignette * 0.6;
 
@@ -186,13 +203,9 @@ export class ThreeBackgroundComponent implements OnDestroy {
     const mesh = new THREE.Mesh(geometry, this.material);
     this.scene.add(mesh);
 
-    this.setupEventListeners();
+    window.addEventListener('resize', this.boundResize);
+    window.addEventListener('mousemove', this.boundMouseMove, { passive: true });
     this.animate();
-  }
-
-  private setupEventListeners() {
-    window.addEventListener('resize', this.onWindowResize.bind(this));
-    window.addEventListener('mousemove', this.onMouseMove.bind(this), { passive: true });
   }
 
   private onWindowResize() {
@@ -207,17 +220,15 @@ export class ThreeBackgroundComponent implements OnDestroy {
   }
 
   private animate() {
-    this.animationFrameId = requestAnimationFrame(this.animate.bind(this));
+    this.animationFrameId = requestAnimationFrame(() => this.animate());
 
     if (!this.store.enable3D()) return; 
 
-    // FPS Throttling
     const now = Date.now();
     const elapsed = now - this.lastFrameTime;
     if (elapsed < (1000 / this.targetFPS)) return;
     this.lastFrameTime = now;
 
-    // Smooth mouse coordinates interpolation
     this.currentX += (this.mouseX - this.currentX) * 0.05;
     this.currentY += (this.mouseY - this.currentY) * 0.05;
 
@@ -225,7 +236,6 @@ export class ThreeBackgroundComponent implements OnDestroy {
     this.material.uniforms['uTime'].value = elapsedTime;
     this.material.uniforms['uSpeed'].value = this.store.animationSpeed();
     
-    // Normalized Mouse coordinates
     this.material.uniforms['uMouse'].value.set(
       this.currentX / window.innerWidth,
       1.0 - (this.currentY / window.innerHeight)
@@ -237,15 +247,17 @@ export class ThreeBackgroundComponent implements OnDestroy {
   ngOnDestroy() {
     if (typeof window !== 'undefined') {
       if (this.animationFrameId) cancelAnimationFrame(this.animationFrameId);
-      window.removeEventListener('resize', this.onWindowResize.bind(this));
-      window.removeEventListener('mousemove', this.onMouseMove.bind(this));
+      window.removeEventListener('resize', this.boundResize);
+      window.removeEventListener('mousemove', this.boundMouseMove);
+      document.removeEventListener('visibilitychange', this.boundVisibility);
     }
     
     if (this.renderer) {
       this.renderer.dispose();
-      const container = this.canvasContainer.nativeElement;
-      if (container.firstChild) {
-        container.removeChild(container.firstChild);
+      this.material?.dispose();
+      const container = this.canvasContainer?.nativeElement;
+      if (container?.contains(this.renderer.domElement)) {
+        container.removeChild(this.renderer.domElement);
       }
     }
   }

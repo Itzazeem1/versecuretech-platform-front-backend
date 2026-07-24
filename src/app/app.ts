@@ -32,11 +32,19 @@ export class App implements OnDestroy {
 
   constructor() {
     afterNextRender(() => {
-      this.lenis = new Lenis({
-        autoRaf: true,
-        duration: 1.2,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-      });
+      const isTouchOrMobile =
+        window.matchMedia('(max-width: 1023px)').matches ||
+        window.matchMedia('(hover: none) and (pointer: coarse)').matches ||
+        window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      // Smooth scroll is desktop-only — Lenis costs a continuous rAF on every page
+      if (!isTouchOrMobile) {
+        this.lenis = new Lenis({
+          autoRaf: true,
+          duration: 1.2,
+          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        });
+      }
       
       // Setup hover listeners for custom cursor
       this.setupCursorListeners();

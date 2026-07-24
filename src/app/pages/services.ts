@@ -5,13 +5,14 @@ import { FooterComponent } from '../components/footer';
 import { ThreeBackgroundComponent } from '../components/three-bg';
 import { RouterLink } from '@angular/router';
 import { StoreService } from '../services/store.service';
+import { TranslatePipe } from '../pipes/translate.pipe';
 import gsap from 'gsap';
 
 @Component({
   selector: 'app-services',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, HeaderComponent, FooterComponent, ThreeBackgroundComponent, RouterLink],
+  imports: [CommonModule, HeaderComponent, FooterComponent, ThreeBackgroundComponent, RouterLink, TranslatePipe],
   template: `
     <app-three-bg></app-three-bg>
     <app-header></app-header>
@@ -27,10 +28,10 @@ import gsap from 'gsap';
         <div class="absolute inset-0 bg-gradient-to-r from-[var(--bg-main)] via-transparent to-transparent"></div>
         <div class="relative z-10 p-8 md:p-12">
           <h1 class="huge-text font-display font-bold tracking-tight mb-8">
-            The Array.
+            {{ 'SERVICES.TITLE' | translate }}
           </h1>
           <p class="subtitle-text max-w-2xl">
-            We engineer digital ecosystems that drive growth and elevate your brand. From pixel-perfect web apps to impenetrable architectures.
+            {{ 'SERVICES.SUBTITLE' | translate }}
           </p>
         </div>
       </section>
@@ -41,23 +42,23 @@ import gsap from 'gsap';
         <!-- Service 1 -->
         <div class="flex flex-col md:flex-row gap-12 w-full items-start scene-anim">
           <div class="w-full md:w-1/3">
-            <span class="text-[var(--text-muted)] font-mono text-sm tracking-widest uppercase mb-4 block">01 / Engineering</span>
-            <h2 class="text-4xl md:text-5xl font-display font-medium mb-6">Web & App<br/>Dev</h2>
+            <span class="text-[var(--text-muted)] font-mono text-sm tracking-widest uppercase mb-4 block">{{ 'SERVICES.ENGINEERING' | translate }}</span>
+            <h2 class="text-4xl md:text-5xl font-display font-medium mb-6">{{ 'SERVICES.WEB_APP_DEV' | translate }}</h2>
           </div>
           <div class="w-full md:w-2/3 md:offset-y-12">
             <div class="glass-panel p-10 md:p-14 rounded-[2rem] glow-hover relative overflow-hidden">
                <div class="w-64 h-64 absolute -top-10 -right-10 bg-[var(--accent-main)] blur-[100px] opacity-10 pointer-events-none"></div>
                <p class="text-[var(--text-muted)] text-xl font-light leading-relaxed mb-10 relative z-10">
-                 Native and cross-platform experiences paired with cinematic, high-performance web applications. Built for speed, scale, and flawless interaction.
+                 {{ 'SERVICES.WEB_APP_DESC' | translate }}
                </p>
                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10 font-mono text-sm text-[var(--text-primary)] opacity-80 relative z-10">
-                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">Custom Architectures</div>
-                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">iOS & Android Native</div>
-                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">Performance Opt</div>
-                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">System Integration</div>
+                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">{{ 'SERVICES.CUSTOM_ARCHITECTURES' | translate }}</div>
+                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">{{ 'SERVICES.IOS_ANDROID' | translate }}</div>
+                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">{{ 'SERVICES.PERFORMANCE_OPT' | translate }}</div>
+                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">{{ 'SERVICES.SYSTEM_INTEGRATION' | translate }}</div>
                </div>
                <a routerLink="/services/web-development" class="tesla-btn inline-flex items-center gap-4 px-8 py-4 rounded-full bg-[var(--text-primary)] text-[var(--bg-main)] font-bold tracking-widest uppercase text-xs relative z-10">
-                 Explore Stack <span class="material-icons text-sm">east</span>
+                 {{ 'SERVICES.EXPLORE_STACK' | translate }} <span class="material-icons text-sm">east</span>
                </a>
             </div>
           </div>
@@ -66,23 +67,23 @@ import gsap from 'gsap';
         <!-- Service 2 -->
         <div class="flex flex-col md:flex-row-reverse gap-12 w-full items-start scene-anim">
           <div class="w-full md:w-1/3 text-left md:text-right">
-            <span class="text-[var(--text-muted)] font-mono text-sm tracking-widest uppercase mb-4 block">02 / Protection</span>
-            <h2 class="text-4xl md:text-5xl font-display font-medium mb-6">Cyber<br/>Sec</h2>
+            <span class="text-[var(--text-muted)] font-mono text-sm tracking-widest uppercase mb-4 block">{{ 'SERVICES.PROTECTION' | translate }}</span>
+            <h2 class="text-4xl md:text-5xl font-display font-medium mb-6">{{ 'SERVICES.CYBER_SEC' | translate }}</h2>
           </div>
           <div class="w-full md:w-2/3 text-left">
             <div class="glass-panel p-10 md:p-14 rounded-[2rem] glow-hover relative overflow-hidden">
                <div class="w-64 h-64 absolute -bottom-10 -left-10 bg-[var(--accent-main)] blur-[100px] opacity-10 pointer-events-none"></div>
                <p class="text-[var(--text-muted)] text-xl font-light leading-relaxed mb-10 relative z-10">
-                 Bulletproof your digital assets. From deep penetration testing to proactive threat monitoring, we ensure your data and users remain impenetrable.
+                 {{ 'SERVICES.CYBER_SEC_DESC' | translate }}
                </p>
                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10 font-mono text-sm text-[var(--text-primary)] opacity-80 relative z-10">
-                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">Penetration Testing</div>
-                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">Security Audits</div>
-                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">Incident Response</div>
-                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">Zero-Trust Architectures</div>
+                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">{{ 'SERVICES.PENETRATION_TESTING' | translate }}</div>
+                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">{{ 'SERVICES.SECURITY_AUDITS' | translate }}</div>
+                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">{{ 'SERVICES.INCIDENT_RESPONSE' | translate }}</div>
+                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">{{ 'SERVICES.ZERO_TRUST' | translate }}</div>
                </div>
                <a routerLink="/services/cyber-security" class="tesla-btn inline-flex items-center gap-4 px-8 py-4 rounded-full bg-[var(--text-primary)] text-[var(--bg-main)] font-bold tracking-widest uppercase text-xs relative z-10">
-                 Explore Security <span class="material-icons text-sm">east</span>
+                 {{ 'SERVICES.EXPLORE_SECURITY' | translate }} <span class="material-icons text-sm">east</span>
                </a>
             </div>
           </div>
@@ -91,23 +92,23 @@ import gsap from 'gsap';
         <!-- Service 3 -->
         <div class="flex flex-col md:flex-row gap-12 w-full items-start scene-anim">
           <div class="w-full md:w-1/3">
-            <span class="text-[var(--text-muted)] font-mono text-sm tracking-widest uppercase mb-4 block">03 / Growth</span>
-            <h2 class="text-4xl md:text-5xl font-display font-medium mb-6">SEO<br/>Opt</h2>
+            <span class="text-[var(--text-muted)] font-mono text-sm tracking-widest uppercase mb-4 block">{{ 'SERVICES.GROWTH' | translate }}</span>
+            <h2 class="text-4xl md:text-5xl font-display font-medium mb-6">{{ 'SERVICES.SEO_OPT' | translate }}</h2>
           </div>
           <div class="w-full md:w-2/3 md:offset-y-12">
             <div class="glass-panel p-10 md:p-14 rounded-[2rem] glow-hover relative overflow-hidden">
                <div class="w-64 h-64 absolute top-1/2 right-1/2 bg-[var(--accent-main)] blur-[120px] opacity-10 pointer-events-none"></div>
                <p class="text-[var(--text-muted)] text-xl font-light leading-relaxed mb-10 relative z-10">
-                 Dominate search engine rankings using highly technical optimization and data-driven architectures that scale organic acquisition globally.
+                 {{ 'SERVICES.SEO_OPT_DESC' | translate }}
                </p>
                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10 font-mono text-sm text-[var(--text-primary)] opacity-80 relative z-10">
-                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">Technical SEO</div>
-                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">Semantic Markup</div>
-                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">Core Web Vitals</div>
-                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">Conversion Architecture</div>
+                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">{{ 'SERVICES.TECHNICAL_SEO' | translate }}</div>
+                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">{{ 'SERVICES.SEMANTIC_MARKUP' | translate }}</div>
+                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">{{ 'SERVICES.CORE_WEB_VITALS' | translate }}</div>
+                 <div class="py-2 border-b border-[var(--text-primary)]/5 py-4">{{ 'SERVICES.CONVERSION_ARCHITECTURE' | translate }}</div>
                </div>
                <a routerLink="/services/seo-optimization" class="tesla-btn inline-flex items-center gap-4 px-8 py-4 rounded-full bg-[var(--text-primary)] text-[var(--bg-main)] font-bold tracking-widest uppercase text-xs relative z-10">
-                 Explore Growth <span class="material-icons text-sm">east</span>
+                 {{ 'SERVICES.EXPLORE_GROWTH' | translate }} <span class="material-icons text-sm">east</span>
                </a>
             </div>
           </div>
@@ -117,9 +118,9 @@ import gsap from 'gsap';
       
       <!-- Minimalist CTA -->
       <section class="max-w-4xl mx-auto px-6 text-center mt-32 md:mt-48 mb-20 scene-anim">
-         <h2 class="text-3xl md:text-5xl font-display font-medium mb-10">Integrate with us.</h2>
+         <h2 class="text-3xl md:text-5xl font-display font-medium mb-10">{{ 'SERVICES.CTA_TITLE' | translate }}</h2>
          <a routerLink="/contact" class="tesla-btn inline-flex items-center gap-4 px-10 py-5 rounded-full border border-[var(--text-primary)]/20 hover:bg-[var(--text-primary)] hover:text-[var(--bg-main)] transition-colors font-bold tracking-widest uppercase text-sm">
-            Contact
+            {{ 'SERVICES.CTA_BUTTON' | translate }}
          </a>
       </section>
       

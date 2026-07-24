@@ -51,44 +51,51 @@ import gsap from 'gsap';
   `]
 })
 export class LoaderComponent implements OnDestroy {
-  loaderContainer = viewChild<ElementRef>('loaderContainer');
-  logo = viewChild<ElementRef>('logo');
-  progress = viewChild<ElementRef>('progress');
-  bar = viewChild<ElementRef>('bar');
+  loaderContainer = viewChild.required<ElementRef>('loaderContainer');
+  logo = viewChild.required<ElementRef>('logo');
+  progress = viewChild.required<ElementRef>('progress');
+  bar = viewChild.required<ElementRef>('bar');
 
   private ctx!: gsap.Context;
 
   constructor() {
     afterNextRender(() => {
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       this.ctx = gsap.context(() => {
-        const tl = gsap.timeline();
-        
-        tl.to(this.logo()?.nativeElement, {
+        const tl = gsap.timeline({
+          onComplete: () => {
+            const el = this.loaderContainer().nativeElement;
+            el.style.display = 'none';
+            el.style.pointerEvents = 'none';
+          }
+        });
+
+        if (reduceMotion) {
+          tl.to(this.loaderContainer().nativeElement, { opacity: 0, duration: 0.35 });
+          return;
+        }
+
+        // Normal brand intro (~3.8s) — site itself stays fast underneath
+        tl.to(this.logo().nativeElement, {
           opacity: 1,
-          y: -10,
-          duration: 1,
+          y: 0,
+          duration: 0.9,
           ease: 'power3.out'
         })
-        .to(this.progress()?.nativeElement, {
+        .to(this.progress().nativeElement, {
           opacity: 1,
-          duration: 0.5
-        }, '-=0.5')
-        .to(this.bar()?.nativeElement, {
+          duration: 0.4
+        }, '-=0.35')
+        .to(this.bar().nativeElement, {
           width: '100%',
-          duration: 1.5,
+          duration: 2.0,
           ease: 'power2.inOut'
         })
-        .to(this.loaderContainer()?.nativeElement, {
+        .to(this.loaderContainer().nativeElement, {
           yPercent: -100,
-          duration: 1,
+          duration: 0.85,
           ease: 'power4.inOut',
-          delay: 0.2,
-          onComplete: () => {
-            if (this.loaderContainer()?.nativeElement) {
-              this.loaderContainer()!.nativeElement.style.display = 'none';
-              this.loaderContainer()!.nativeElement.style.pointerEvents = 'none';
-            }
-          }
+          delay: 0.25
         });
       });
     });
