@@ -4,23 +4,24 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { SupabaseService } from '../services/supabase.service';
 import { RouterLink } from '@angular/router';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-ai-builder',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, TranslatePipe],
   template: `
     <div class="min-h-screen bg-black text-white flex flex-col font-sans">
       <!-- Header -->
       <header class="border-b border-white/10 p-4 flex justify-between items-center bg-zinc-950">
         <div class="flex items-center gap-3">
           <div class="w-8 h-8 rounded-full bg-indigo-600 flex items-center justify-center font-bold">AI</div>
-          <h1 class="text-xl font-medium tracking-tight">Horizon AI Builder</h1>
+          <h1 class="text-xl font-medium tracking-tight">{{ 'AI_BUILDER.TITLE' | translate }}</h1>
         </div>
         <div class="flex gap-3">
-          <button routerLink="/admin" class="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors">Back to Admin</button>
+          <button routerLink="/admin" class="px-4 py-2 text-sm text-zinc-400 hover:text-white transition-colors">{{ 'AI_BUILDER.BACK_TO_ADMIN' | translate }}</button>
           <button (click)="saveToSupabase()" [disabled]="!generatedHtml() || saving()" class="px-4 py-2 text-sm bg-white text-black font-medium rounded-md hover:bg-zinc-200 transition-colors disabled:opacity-50">
-            {{ saving() ? 'Saving...' : 'Publish to Live Site' }}
+            {{ saving() ? ('AI_BUILDER.SAVING' | translate) : ('AI_BUILDER.PUBLISH' | translate) }}
           </button>
         </div>
       </header>
@@ -30,8 +31,8 @@ import { RouterLink } from '@angular/router';
         <!-- Sidebar Controls -->
         <aside class="w-80 border-r border-white/10 bg-zinc-950 p-6 flex flex-col gap-6 overflow-y-auto">
           <div>
-            <h2 class="text-sm font-medium text-zinc-400 mb-2 uppercase tracking-wider">Generate Website</h2>
-            <p class="text-xs text-zinc-500 mb-4">Describe the website you want to build. The AI will generate a fully functional page with Tailwind CSS and Vanilla JS.</p>
+            <h2 class="text-sm font-medium text-zinc-400 mb-2 uppercase tracking-wider">{{ 'AI_BUILDER.GENERATE_TITLE' | translate }}</h2>
+            <p class="text-xs text-zinc-500 mb-4">{{ 'AI_BUILDER.GENERATE_DESC' | translate }}</p>
             
             <textarea 
               [(ngModel)]="prompt" 
@@ -46,9 +47,9 @@ import { RouterLink } from '@angular/router';
             class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50 flex justify-center items-center gap-2">
             @if (loading()) {
               <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-              Generating...
+              {{ 'AI_BUILDER.GENERATING' | translate }}
             } @else {
-              Generate Magic
+              {{ 'AI_BUILDER.GENERATE_MAGIC' | translate }}
             }
           </button>
 
@@ -73,7 +74,7 @@ import { RouterLink } from '@angular/router';
               <div class="w-3 h-3 rounded-full bg-green-500/80"></div>
             </div>
             <div class="mx-auto bg-zinc-900 text-zinc-500 text-xs px-24 py-1 rounded-md font-mono">
-              Live Preview
+              {{ 'AI_BUILDER.LIVE_PREVIEW' | translate }}
             </div>
           </div>
           
@@ -81,7 +82,7 @@ import { RouterLink } from '@angular/router';
             @if (!generatedHtml()) {
               <div class="absolute inset-0 flex flex-col items-center justify-center text-zinc-400 bg-zinc-50">
                 <svg class="w-12 h-12 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                <p>Your generated website will appear here.</p>
+                <p>{{ 'AI_BUILDER.PREVIEW_PLACEHOLDER' | translate }}</p>
               </div>
             } @else {
               <iframe 

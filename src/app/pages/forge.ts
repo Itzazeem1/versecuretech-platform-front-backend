@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { DomSanitizer } from '@angular/platform-browser';
 import { HttpClient } from '@angular/common/http';
 import { HeaderComponent } from '../components/header';
+import { TranslatePipe } from '../pipes/translate.pipe';
+import { TranslationService } from '../services/translation.service';
 import { ForgeStateService } from '../services/forge-state.service';
 import { ForgeContextEngineService } from '../services/forge-context-engine.service';
 import { SupabaseService } from '../services/supabase.service';
@@ -21,24 +23,24 @@ interface RouteValidationResult {
 @Component({
   selector: 'app-forge',
   standalone: true,
-  imports: [CommonModule, FormsModule, HeaderComponent],
+  imports: [CommonModule, FormsModule, HeaderComponent, TranslatePipe],
   template: `
     <ng-container>
-    <div class="forge-surface relative flex flex-col h-screen text-[#F5F5F4] font-sans overflow-hidden selection:bg-amber-400/20">
+    <div class="forge-surface relative flex flex-col h-[100dvh] md:h-screen text-[#F5F5F4] font-sans selection:bg-amber-400/20 overflow-hidden">
       <app-header></app-header>
       
       <!-- IDE Main Workspace Container -->
-      <div class="flex flex-1 pt-20 overflow-hidden">
+      <div class="forge-workspace flex flex-1 pt-16 md:pt-20 overflow-hidden relative min-h-0 flex-col md:flex-row">
         
-        <!-- leftmost: Activity Bar -->
-        <div class="forge-panel m-3 mr-0 w-16 rounded-[1.5rem] flex flex-col items-center py-5 justify-between select-none z-30 shrink-0">
-          <div class="flex flex-col gap-4 w-full items-center">
+        <!-- leftmost: Activity Bar (horizontal strip on mobile) -->
+        <div class="forge-panel mx-2 mt-2 md:m-3 md:mr-0 h-12 md:h-auto w-auto md:w-16 rounded-2xl md:rounded-[1.5rem] flex flex-row md:flex-col items-center px-3 md:px-0 py-0 md:py-5 justify-between md:justify-between select-none z-30 shrink-0">
+          <div class="flex flex-row md:flex-col gap-3 md:gap-4 w-full items-center justify-center md:justify-start">
             <!-- Explorer Tab Button -->
             <button 
               (click)="toggleTab('explorer')"
               class="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200"
               [ngClass]="activeTab() === 'explorer' && sidebarExpanded() ? 'bg-gradient-to-br from-amber-600/25 to-stone-300/10 text-white border border-amber-400/25 shadow-lg shadow-amber-950/30' : 'text-stone-400 hover:text-stone-200 hover:bg-white/5'"
-              title="File Explorer">
+              [attr.title]="'FORGE.FILE_EXPLORER' | translate">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-19.5 0A2.25 2.25 0 002.25 15v4.5a2.25 2.25 0 002.25 2.25h15a2.25 2.25 0 002.25-2.25V15a2.25 2.25 0 00-2.25-2.25m-19.5 0h19.5M9.75 9.75V4.5a2.25 2.25 0 012.25-2.25h3a2.25 2.25 0 012.25 2.25v5.25m-7.5 0h7.5"></path>
               </svg>
@@ -49,7 +51,7 @@ interface RouteValidationResult {
               (click)="toggleTab('chat')"
               class="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200"
               [ngClass]="activeTab() === 'chat' && sidebarExpanded() ? 'bg-gradient-to-br from-amber-600/25 to-stone-300/10 text-white border border-amber-400/25 shadow-lg shadow-amber-950/30' : 'text-stone-400 hover:text-stone-200 hover:bg-white/5'"
-              title="Forge Studio">
+              [attr.title]="'FORGE.STUDIO' | translate">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 18a5.969 5.969 0 01-.774-3.68A8.048 8.048 0 013 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z"></path>
               </svg>
@@ -60,29 +62,29 @@ interface RouteValidationResult {
               (click)="toggleTab('sessions')"
               class="w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200"
               [ngClass]="activeTab() === 'sessions' && sidebarExpanded() ? 'bg-gradient-to-br from-amber-600/25 to-stone-300/10 text-white border border-amber-400/25 shadow-lg shadow-amber-950/30' : 'text-stone-400 hover:text-stone-200 hover:bg-white/5'"
-              title="Chat Sessions">
+              [attr.title]="'FORGE.CHAT_SESSIONS' | translate">
               <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8 9h8m-8 4h6m9 4a2 2 0 01-2 2H5l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v12z"></path>
               </svg>
             </button>
           </div>
-          <div class="text-amber-100/80 font-mono text-[10px] rotate-[-90deg] mb-6 tracking-[0.34em]">STUDIO</div>
+          <div class="hidden md:block text-amber-100/80 font-mono text-[10px] rotate-[-90deg] mb-6 tracking-[0.34em]">{{ 'FORGE.STUDIO_LABEL' | translate }}</div>
         </div>
 
         <!-- Sidebar Panel Drawer -->
         <aside 
-          class="forge-panel my-3 ml-3 rounded-[1.75rem] flex flex-col z-20 h-[calc(100%-1.5rem)] overflow-hidden transition-all duration-300 shrink-0"
-          [ngClass]="sidebarExpanded() ? 'w-[360px] opacity-100' : 'w-0 opacity-0 pointer-events-none'">
+          class="forge-panel mx-2 my-2 md:my-3 md:ml-3 rounded-2xl md:rounded-[1.75rem] flex flex-col z-20 min-h-0 flex-1 md:flex-none md:h-[calc(100%-1.5rem)] overflow-hidden transition-all duration-300 shrink-0"
+          [ngClass]="sidebarExpanded() ? 'w-auto md:w-[360px] opacity-100' : 'w-0 opacity-0 pointer-events-none'">
           
           <!-- Sessions Tab Content -->
           @if (activeTab() === 'sessions') {
             <div class="flex-1 flex flex-col h-full overflow-hidden">
               <header class="h-14 flex items-center justify-between px-5 border-b border-white/10 shrink-0 bg-white/[0.02]">
-                <span class="text-[11px] font-mono tracking-widest text-stone-400 uppercase font-semibold">Chat Sessions</span>
+                <span class="text-[11px] font-mono tracking-widest text-stone-400 uppercase font-semibold">{{ 'FORGE.CHAT_SESSIONS' | translate }}</span>
                 <button 
                   (click)="createNewChat()" 
                   class="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-[10px] font-mono text-stone-300 uppercase transition-all duration-150 active:scale-95">
-                  + Chat
+                  {{ 'FORGE.NEW_CHAT' | translate }}
                 </button>
               </header>
 
@@ -91,14 +93,14 @@ interface RouteValidationResult {
                   <input
                     type="search"
                     [(ngModel)]="chatSearch"
-                    placeholder="Search chats"
+                    [placeholder]="'FORGE.SEARCH_CHATS' | translate"
                     class="w-full rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-[11px] font-mono text-stone-200 outline-none placeholder:text-stone-600"
                   />
                 </div>
 
                 @if (getVisibleChats().length === 0) {
                   <div class="text-[11px] font-mono text-stone-600 p-4 border border-dashed border-white/5 rounded text-center">
-                    No saved conversations yet
+                    {{ 'FORGE.NO_CHATS' | translate }}
                   </div>
                 }
 
@@ -109,19 +111,19 @@ interface RouteValidationResult {
                     [ngClass]="chat.id === state.activeChatId() ? 'bg-white/5 border-white/10 text-white shadow-[0_0_15px_rgba(255,255,255,0.02)]' : 'border-transparent text-stone-400 hover:bg-white/[0.02] hover:text-stone-200'">
                     <div class="min-w-0">
                       <div class="text-[12px] font-mono truncate leading-none">{{ chat.title }}</div>
-                      <div class="text-[9px] text-stone-500 font-mono mt-1">{{ chat.messages.length }} messages · {{ formatDate(chat.updatedAt) }}</div>
+                      <div class="text-[9px] text-stone-500 font-mono mt-1">{{ chat.messages.length }} {{ 'FORGE.MESSAGES' | translate }} · {{ formatDate(chat.updatedAt) }}</div>
                       @if (chat.pinned) {
-                        <div class="text-[9px] text-amber-400 font-mono mt-1">Pinned</div>
+                        <div class="text-[9px] text-amber-400 font-mono mt-1">{{ 'FORGE.PINNED' | translate }}</div>
                       }
                     </div>
                     <div class="flex items-center gap-1">
-                      <button (click)="togglePin(chat.id, $event)" class="text-stone-500 hover:text-amber-400 rounded p-1" title="Pin chat">📌</button>
-                      <button (click)="duplicateChat(chat.id, $event)" class="text-stone-500 hover:text-white rounded p-1" title="Duplicate chat">⧉</button>
-                      <button (click)="renameChat(chat.id, $event)" class="text-stone-500 hover:text-white rounded p-1" title="Rename chat">✎</button>
+                      <button (click)="togglePin(chat.id, $event)" class="text-stone-500 hover:text-amber-400 rounded p-1" [attr.title]="'FORGE.PIN_CHAT' | translate">📌</button>
+                      <button (click)="duplicateChat(chat.id, $event)" class="text-stone-500 hover:text-white rounded p-1" [attr.title]="'FORGE.DUPLICATE_CHAT' | translate">⧉</button>
+                      <button (click)="renameChat(chat.id, $event)" class="text-stone-500 hover:text-white rounded p-1" [attr.title]="'FORGE.RENAME_CHAT' | translate">✎</button>
                       <button 
                         (click)="deleteChat(chat.id, $event)"
                         class="text-stone-500 hover:text-red-400 transition-colors rounded p-1"
-                        title="Delete chat">
+                        [attr.title]="'FORGE.DELETE_CHAT' | translate">
                         ✕
                       </button>
                     </div>
@@ -135,17 +137,17 @@ interface RouteValidationResult {
           @if (activeTab() === 'explorer') {
             <div class="flex-1 flex flex-col h-full overflow-hidden">
               <header class="h-14 flex items-center justify-between px-5 border-b border-white/10 shrink-0 bg-white/[0.02]">
-                <span class="text-[11px] font-mono tracking-widest text-stone-400 uppercase font-semibold">Project Files</span>
+                <span class="text-[11px] font-mono tracking-widest text-stone-400 uppercase font-semibold">{{ 'FORGE.PROJECT_FILES' | translate }}</span>
                 <div class="flex items-center gap-1.5">
                   <button 
                     (click)="createNewFile()" 
                     class="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-[10px] font-mono text-stone-300 uppercase transition-all duration-150 active:scale-95">
-                    + New
+                    {{ 'FORGE.NEW_FILE' | translate }}
                   </button>
                   <button 
                     (click)="downloadZip()" 
                     class="px-2 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-[10px] font-mono text-stone-300 uppercase transition-all duration-150 active:scale-95" 
-                    title="Download project as ZIP">
+                    [attr.title]="'FORGE.DOWNLOAD_ZIP' | translate">
                     ZIP
                   </button>
                 </div>
@@ -154,7 +156,7 @@ interface RouteValidationResult {
               <div class="flex-1 overflow-y-auto py-3 px-2">
                 @if (state.files().length === 0) {
                   <div class="text-[11px] font-mono text-stone-600 p-4 border border-dashed border-white/5 rounded text-center">
-                    Your generated files will appear here
+                    {{ 'FORGE.NO_FILES' | translate }}
                   </div>
                 }
                 
@@ -194,13 +196,13 @@ interface RouteValidationResult {
                 <div class="min-w-0">
                   <div class="flex items-center gap-2">
                     <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_18px_rgba(52,211,153,0.8)]"></div>
-                    <span class="text-[11px] font-mono tracking-widest text-stone-300 uppercase font-semibold">Forge AI</span>
+                    <span class="text-[11px] font-mono tracking-widest text-stone-300 uppercase font-semibold">{{ 'FORGE.FORGE_AI' | translate }}</span>
                   </div>
-                  <div class="mt-1 truncate text-[11px] text-stone-500">{{ state.currentChat()?.title || 'Active Chat' }}</div>
+                  <div class="mt-1 truncate text-[11px] text-stone-500">{{ state.currentChat()?.title || ('FORGE.ACTIVE_CHAT' | translate) }}</div>
                 </div>
                 <div class="flex items-center gap-1">
-                  <span class="text-[10px] font-mono text-stone-500">Credits</span>
-                  <span class="text-[11px] font-mono text-white font-bold bg-white/5 px-2 py-0.5 border border-white/10 rounded-full">{{ supabase.isDeveloperAccount() ? 'UNLIMITED' : state.credits() }}</span>
+                  <span class="text-[10px] font-mono text-stone-500">{{ 'FORGE.CREDITS' | translate }}</span>
+                  <span class="text-[11px] font-mono text-white font-bold bg-white/5 px-2 py-0.5 border border-white/10 rounded-full">{{ supabase.isDeveloperAccount() ? ('FORGE.UNLIMITED' | translate) : state.credits() }}</span>
                 </div>
               </header>
 
@@ -213,8 +215,8 @@ interface RouteValidationResult {
                       <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 3-3 3m6-3h6m-18 8.25h16.5c.621 0 1.125-.504 1.125-1.125V5.625c0-.621-.504-1.125-1.125-1.125H3.75A1.125 1.125 0 002.625 5.625v12.75c0 .621.504 1.125 1.125 1.125z"></path>
                     </svg>
                     </div>
-                    <span class="font-mono text-[10px] uppercase tracking-widest text-amber-100 mb-1">Ready to create</span>
-                    <p class="text-[12px] leading-relaxed text-stone-500">Describe the product you want and Forge will design, code, preview, and improve it.</p>
+                    <span class="font-mono text-[10px] uppercase tracking-widest text-amber-100 mb-1">{{ 'FORGE.READY_TO_CREATE' | translate }}</span>
+                    <p class="text-[12px] leading-relaxed text-stone-500">{{ 'FORGE.READY_HINT' | translate }}</p>
                   </div>
                 }
 
@@ -225,7 +227,7 @@ interface RouteValidationResult {
                     <div class="flex items-center justify-between border-b border-white/5 pb-1.5 mb-1.5">
                       <span class="text-[9px] font-mono uppercase tracking-wider font-semibold" 
                         [ngClass]="msg.role === 'user' ? 'text-amber-100' : 'text-stone-200'">
-                        {{ msg.role === 'user' ? 'You' : 'Forge' }}
+                        {{ msg.role === 'user' ? ('FORGE.YOU' | translate) : ('FORGE.FORGE_NAME' | translate) }}
                       </span>
                       <span class="text-[9px] font-mono text-stone-600">t+{{ $index + 1 }}</span>
                     </div>
@@ -239,15 +241,15 @@ interface RouteValidationResult {
                   <div class="forge-message rounded-2xl border border-amber-400/15 bg-gradient-to-br from-amber-700/[0.085] via-white/[0.035] to-stone-300/[0.045] p-4 text-[11px] text-stone-300 shadow-2xl shadow-black/20">
                     <div class="flex items-start justify-between gap-4">
                       <div>
-                        <div class="text-[10px] font-mono uppercase tracking-[0.24em] text-amber-100">Quality Intelligence</div>
+                        <div class="text-[10px] font-mono uppercase tracking-[0.24em] text-amber-100">{{ 'FORGE.QUALITY_INTEL' | translate }}</div>
                         <div class="mt-1 text-sm font-medium text-white">{{ report.summary }}</div>
                       </div>
                       <div class="rounded-full border border-amber-300/30 bg-amber-300/10 px-3 py-1 text-xs font-semibold text-amber-100">{{ report.qualityScore }}/100</div>
                     </div>
                     <div class="mt-4 grid grid-cols-3 gap-2">
-                      <div class="rounded-xl bg-black/20 p-3"><div class="text-[9px] uppercase tracking-widest text-stone-500">Pages</div><div class="mt-1 truncate text-white">{{ report.pages.length || 0 }}</div></div>
-                      <div class="rounded-xl bg-black/20 p-3"><div class="text-[9px] uppercase tracking-widest text-stone-500">Changed</div><div class="mt-1 truncate text-white">{{ report.changedFiles.length || 0 }}</div></div>
-                      <div class="rounded-xl bg-black/20 p-3"><div class="text-[9px] uppercase tracking-widest text-stone-500">Issues</div><div class="mt-1 truncate text-white">{{ report.unresolvedLinks.length + report.warnings.length }}</div></div>
+                      <div class="rounded-xl bg-black/20 p-3"><div class="text-[9px] uppercase tracking-widest text-stone-500">{{ 'FORGE.PAGES' | translate }}</div><div class="mt-1 truncate text-white">{{ report.pages.length || 0 }}</div></div>
+                      <div class="rounded-xl bg-black/20 p-3"><div class="text-[9px] uppercase tracking-widest text-stone-500">{{ 'FORGE.CHANGED' | translate }}</div><div class="mt-1 truncate text-white">{{ report.changedFiles.length || 0 }}</div></div>
+                      <div class="rounded-xl bg-black/20 p-3"><div class="text-[9px] uppercase tracking-widest text-stone-500">{{ 'FORGE.ISSUES' | translate }}</div><div class="mt-1 truncate text-white">{{ report.unresolvedLinks.length + report.warnings.length }}</div></div>
                     </div>
                     @if (report.warnings.length > 0 || report.unresolvedLinks.length > 0) {
                       <div class="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/10 p-3 text-amber-100">
@@ -258,7 +260,7 @@ interface RouteValidationResult {
                       <button
                         (click)="rollbackLatestSnapshot()"
                         class="mt-3 w-full rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-[10px] font-mono uppercase tracking-widest text-stone-200 hover:bg-white/[0.08]">
-                        Roll back last AI change
+                        {{ 'FORGE.ROLLBACK' | translate }}
                       </button>
                     }
                   </div>
@@ -266,7 +268,7 @@ interface RouteValidationResult {
 
                 @if (loading()) {
                   <div class="forge-message flex flex-col gap-3 rounded-2xl border border-amber-300/20 bg-amber-300/10 p-4 animate-pulse">
-                    <span class="text-[9px] font-mono uppercase tracking-wider text-emerald-300 font-semibold">Forge is building</span>
+                    <span class="text-[9px] font-mono uppercase tracking-wider text-emerald-300 font-semibold">{{ 'FORGE.BUILDING' | translate }}</span>
                     <div class="text-[12px] font-mono text-stone-300">
                       {{ builderStatus() }}
                     </div>
@@ -284,14 +286,14 @@ interface RouteValidationResult {
               </div>
 
               <!-- Chat Input Console -->
-              <div (wheel)="forwardComposerWheel($event)" class="p-5 bg-black/30 border-t border-white/10 shrink-0 flex flex-col gap-3">
-                <div class="flex flex-wrap gap-2">
+              <div (wheel)="forwardComposerWheel($event)" class="forge-composer p-3 md:p-5 bg-black/30 border-t border-white/10 shrink-0 flex flex-col gap-2 md:gap-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:pb-5">
+                <div class="flex flex-nowrap md:flex-wrap gap-2 overflow-x-auto scrollbar-none -mx-1 px-1">
                   @for (action of quickActions; track action.prompt) {
                     <button
                       type="button"
                       (click)="applyQuickAction(action.prompt)"
-                      class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-left text-[10px] font-mono text-stone-300 hover:border-amber-300/40 hover:bg-amber-300/10 hover:text-amber-100 transition-colors">
-                      {{ action.label }}
+                      class="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-left text-[10px] font-mono text-stone-300 hover:border-amber-300/40 hover:bg-amber-300/10 hover:text-amber-100 transition-colors">
+                      {{ action.labelKey | translate }}
                     </button>
                   }
                 </div>
@@ -313,8 +315,8 @@ interface RouteValidationResult {
                   <textarea 
                     [(ngModel)]="prompt" 
                     (keydown)="handleEnter($event)"
-                    placeholder="Describe what Forge should design, improve, research, or repair..." 
-                    class="w-full bg-transparent p-4 pb-14 text-[13px] text-stone-200 focus:outline-none resize-none min-h-[110px] scrollbar-none font-mono placeholder:text-stone-600"
+                    [placeholder]="'FORGE.PROMPT_PLACEHOLDER' | translate" 
+                    class="forge-prompt w-full bg-transparent p-3 md:p-4 pb-12 md:pb-14 text-[13px] text-stone-200 focus:outline-none resize-none min-h-[72px] md:min-h-[110px] max-h-[28vh] md:max-h-none scrollbar-none font-mono placeholder:text-stone-600"
                     [disabled]="loading()">
                   </textarea>
                   
@@ -322,7 +324,7 @@ interface RouteValidationResult {
                     <button 
                       (click)="triggerFileInput()"
                       class="p-1.5 text-stone-500 hover:text-stone-300 hover:bg-white/5 rounded-md transition-colors"
-                      title="Attach assets / files">
+                      [attr.title]="'FORGE.ATTACH' | translate">
                       <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3 3 0 1119.5 7.372L8.552 18.32m.009-.01l-.01.01m5.699-9.941l-7.81 7.81a1.5 1.5 0 002.112 2.13"></path>
                       </svg>
@@ -341,7 +343,7 @@ interface RouteValidationResult {
                       (click)="generateWebsite()" 
                       [disabled]="loading() || (!prompt().trim() && uploadedFiles().length === 0)"
                     class="forge-button-glow text-stone-950 hover:brightness-110 disabled:bg-stone-900 disabled:text-stone-600 px-4 py-2 rounded-xl text-[11px] font-bold transition-all duration-200 font-mono flex items-center gap-1 active:scale-95 disabled:active:scale-100 uppercase">
-                      <span>{{ loading() ? 'Building' : 'Build' }}</span>
+                      <span>{{ loading() ? ('FORGE.BUILDING_BTN' | translate) : ('FORGE.BUILD' | translate) }}</span>
                     </button>
                   </div>
                 </div>
@@ -352,8 +354,8 @@ interface RouteValidationResult {
 
         </aside>
 
-        <!-- Main Workspace Area: Code & Preview -->
-        <main class="forge-panel m-3 flex-1 flex flex-col min-w-0 relative overflow-hidden select-none rounded-[1.75rem]">
+        <!-- Main Workspace Area: Code & Preview (desktop/tablet only — mobile uses chat/sidebar) -->
+        <main class="forge-panel m-3 flex-1 flex-col min-w-0 relative overflow-hidden select-none rounded-[1.75rem] hidden md:flex">
           
           <!-- Editor Header Tab bar & Mode toggles -->
           <header class="h-12 flex items-center justify-between px-4 border-b border-white/5 bg-[#0C0A09]/80 backdrop-blur-md shrink-0">
@@ -370,13 +372,13 @@ interface RouteValidationResult {
                     <button 
                       (click)="state.removeFile(file.path); $event.stopPropagation()"
                       class="ml-1 opacity-60 hover:opacity-100 text-stone-400 hover:text-red-400 p-0.5 rounded transition-all text-[10px]"
-                      title="Close file">
+                      [attr.title]="'FORGE.CLOSE_FILE' | translate">
                       ✕
                     </button>
                   </div>
                 }
               } @else {
-                <div class="px-4 text-stone-400 text-[11px] font-mono uppercase tracking-wider select-none">No active file</div>
+                <div class="px-4 text-stone-400 text-[11px] font-mono uppercase tracking-wider select-none">{{ 'FORGE.NO_ACTIVE_FILE' | translate }}</div>
               }
             </div>
 
@@ -397,19 +399,19 @@ interface RouteValidationResult {
                   (click)="layoutMode.set('code')"
                   class="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider rounded-md transition-all select-none"
                   [ngClass]="layoutMode() === 'code' ? 'bg-white/10 text-white font-bold' : 'text-stone-500 hover:text-stone-300'">
-                  Code
+                  {{ 'FORGE.CODE' | translate }}
                 </button>
                 <button 
                   (click)="layoutMode.set('split')"
                   class="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider rounded-md transition-all select-none"
                   [ngClass]="layoutMode() === 'split' ? 'bg-white/10 text-white font-bold' : 'text-stone-500 hover:text-stone-300'">
-                  Split
+                  {{ 'FORGE.SPLIT' | translate }}
                 </button>
                 <button 
                   (click)="layoutMode.set('preview'); updatePreview()"
                   class="px-2.5 py-1 text-[10px] font-mono uppercase tracking-wider rounded-md transition-all select-none"
                   [ngClass]="layoutMode() === 'preview' ? 'bg-white/10 text-white font-bold' : 'text-stone-500 hover:text-stone-300'">
-                  Preview
+                  {{ 'FORGE.PREVIEW' | translate }}
                 </button>
               </div>
             </div>
@@ -422,9 +424,9 @@ interface RouteValidationResult {
               <div class="min-w-0">
                 <div class="inline-flex items-center gap-2 rounded-full border border-amber-200/20 bg-amber-300/10 px-3 py-1 text-[10px] font-mono uppercase tracking-[0.26em] text-amber-100">
                   <span class="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_18px_rgba(110,231,183,0.8)]"></span>
-                  Forge AI Command
+                  {{ 'FORGE.COMMAND' | translate }}
                 </div>
-                <h1 class="mt-3 truncate text-2xl font-semibold tracking-tight text-white">Build, preview, and improve with Forge.</h1>
+                <h1 class="mt-3 truncate text-2xl font-semibold tracking-tight text-white">{{ 'FORGE.COMMAND_TITLE' | translate }}</h1>
                 <div class="mt-1 truncate text-sm text-stone-400">{{ builderStatus() }}</div>
                 <div class="mt-3 flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-stone-500">
                   <span class="h-1.5 w-1.5 rounded-full bg-amber-300"></span>
@@ -434,15 +436,15 @@ interface RouteValidationResult {
               <div class="flex flex-wrap items-center justify-start gap-2 lg:justify-end">
                 <div class="grid grid-cols-3 gap-2">
                   <div class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 min-w-[92px]">
-                    <div class="text-[9px] font-mono uppercase tracking-widest text-stone-500">Quality</div>
+                    <div class="text-[9px] font-mono uppercase tracking-widest text-stone-500">{{ 'FORGE.QUALITY' | translate }}</div>
                     <div class="mt-1 text-lg font-semibold text-white">{{ state.currentChat()?.lastBuildReport?.qualityScore || 0 }}<span class="text-xs text-stone-500">/100</span></div>
                   </div>
                   <div class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 min-w-[92px]">
-                    <div class="text-[9px] font-mono uppercase tracking-widest text-stone-500">Pages</div>
+                    <div class="text-[9px] font-mono uppercase tracking-widest text-stone-500">{{ 'FORGE.PAGES' | translate }}</div>
                     <div class="mt-1 text-lg font-semibold text-white">{{ htmlPageCount() }}</div>
                   </div>
                   <div class="rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 min-w-[92px]">
-                    <div class="text-[9px] font-mono uppercase tracking-widest text-stone-500">Files</div>
+                    <div class="text-[9px] font-mono uppercase tracking-widest text-stone-500">{{ 'FORGE.FILES' | translate }}</div>
                     <div class="mt-1 text-lg font-semibold text-white">{{ state.files().length }}</div>
                   </div>
                 </div>
@@ -457,14 +459,14 @@ interface RouteValidationResult {
                   }
                 </div>
                 <button type="button" (click)="showIntelligencePanel.set(!showIntelligencePanel())" class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-[10px] font-mono uppercase tracking-widest text-stone-400 hover:text-blue-400">
-                  {{ showIntelligencePanel() ? 'Hide details' : 'Details' }}
+                  {{ showIntelligencePanel() ? ('FORGE.HIDE_DETAILS' | translate) : ('FORGE.DETAILS' | translate) }}
                 </button>
               </div>
             </div>
             @if (showIntelligencePanel()) {
               <div class="relative mt-3 grid gap-3 lg:grid-cols-3">
                 <div class="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
-                  <div class="text-[9px] font-mono uppercase tracking-widest text-amber-100">AI Timeline</div>
+                  <div class="text-[9px] font-mono uppercase tracking-widest text-amber-100">{{ 'FORGE.AI_TIMELINE' | translate }}</div>
                   <div class="mt-2 flex flex-col gap-1.5">
                     @for (step of getWorkflowSteps().slice(0, 5); track step.phase) {
                       <div class="flex items-center justify-between gap-2 text-[10px]">
@@ -476,16 +478,16 @@ interface RouteValidationResult {
                       </div>
                     }
                     @if (getWorkflowSteps().length === 0) {
-                      <span class="text-[11px] text-stone-500">No run yet</span>
+                      <span class="text-[11px] text-stone-500">{{ 'FORGE.NO_RUN' | translate }}</span>
                     }
                   </div>
                 </div>
                 <div class="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
-                  <div class="text-[9px] font-mono uppercase tracking-widest text-stone-200">Project Brief</div>
-                  <div class="mt-2 line-clamp-4 text-[11px] leading-relaxed text-stone-400">{{ state.currentChat()?.projectSummary || state.currentChat()?.project?.aiSummary || 'Forge is waiting for a project brief.' }}</div>
+                  <div class="text-[9px] font-mono uppercase tracking-widest text-stone-200">{{ 'FORGE.PROJECT_BRIEF' | translate }}</div>
+                  <div class="mt-2 line-clamp-4 text-[11px] leading-relaxed text-stone-400">{{ state.currentChat()?.projectSummary || state.currentChat()?.project?.aiSummary || ('FORGE.BRIEF_WAITING' | translate) }}</div>
                 </div>
                 <div class="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
-                  <div class="text-[9px] font-mono uppercase tracking-widest text-amber-100">Readiness</div>
+                  <div class="text-[9px] font-mono uppercase tracking-widest text-amber-100">{{ 'FORGE.READINESS' | translate }}</div>
                   <div class="mt-2 text-[11px] leading-relaxed text-stone-400">{{ getDeployReadinessSummary() }}</div>
                 </div>
               </div>
@@ -519,8 +521,8 @@ interface RouteValidationResult {
                   </div>
                 } @else {
                   <div class="flex-1 flex flex-col items-center justify-center text-stone-600 font-mono text-[11px] uppercase tracking-widest bg-[#0C0A09]/80">
-                    <span class="mb-1">No file selected</span>
-                    <span>Choose a project file to edit</span>
+                    <span class="mb-1">{{ 'FORGE.NO_FILE_SELECTED' | translate }}</span>
+                    <span>{{ 'FORGE.CHOOSE_FILE' | translate }}</span>
                   </div>
                 }
               </div>
@@ -531,7 +533,7 @@ interface RouteValidationResult {
               <div class="flex-1 h-full bg-[radial-gradient(circle_at_top,rgba(245,158,11,0.12),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(168,162,158,0.10),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(52,211,153,0.06),transparent_24%),#0C0A09] flex flex-col overflow-hidden relative">
                 @if (state.safeHtmlPreview()) {
                   <div class="pointer-events-none absolute left-5 top-5 z-10 rounded-full border border-white/10 bg-black/40 px-3 py-1 text-[10px] font-mono uppercase tracking-widest text-stone-300 backdrop-blur-xl">
-                    Live Canvas
+                    {{ 'FORGE.LIVE_CANVAS' | translate }}
                   </div>
                   <div class="pointer-events-none absolute right-5 top-5 z-10 rounded-full border border-amber-200/20 bg-amber-300/10 px-3 py-1 text-[10px] font-mono uppercase tracking-widest text-amber-100 backdrop-blur-xl">
                     {{ previewDevice() }}
@@ -548,7 +550,7 @@ interface RouteValidationResult {
                           {{ page }}
                         </button>
                       }
-                      <button type="button" (click)="updatePreview()" class="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-stone-300 hover:text-blue-400">Refresh</button>
+                      <button type="button" (click)="updatePreview()" class="rounded-full border border-white/10 bg-white/[0.04] px-2 py-1 text-stone-300 hover:text-blue-400">{{ 'FORGE.REFRESH' | translate }}</button>
                     </div>
                   </div>
                   <div class="flex-1 relative flex items-center justify-center p-6">
@@ -562,8 +564,8 @@ interface RouteValidationResult {
                 } @else {
                   <div class="flex-1 flex flex-col items-center justify-center text-stone-500 font-mono text-[11px] uppercase tracking-widest">
                     <div class="mb-4 rounded-[2rem] border border-white/10 bg-white/[0.04] px-6 py-5 text-center shadow-2xl shadow-black/30">
-                      <span class="block text-amber-100">Preview waiting</span>
-                      <span class="mt-1 block text-stone-500">Generate a project to launch the live canvas</span>
+                      <span class="block text-amber-100">{{ 'FORGE.PREVIEW_WAITING' | translate }}</span>
+                      <span class="mt-1 block text-stone-500">{{ 'FORGE.PREVIEW_HINT' | translate }}</span>
                     </div>
                   </div>
                 }
@@ -583,7 +585,7 @@ interface RouteValidationResult {
               </div>
               <div class="flex items-center gap-1.5">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                <span>Server online</span>
+                <span>{{ 'FORGE.SERVER_ONLINE' | translate }}</span>
               </div>
             </div>
 
@@ -618,10 +620,10 @@ interface RouteValidationResult {
             <div style="display:flex;flex-direction:column;gap:2px;">
               <span style="font-size:11px;font-family:monospace;letter-spacing:0.16em;color:#818CF8;text-transform:uppercase;font-weight:700;">{{ modalState().title }}</span>
               <span style="font-size:10px;color:#8F9CAE;font-family:monospace;">
-                @if (modalState().type === 'create_file') { Add a new file to the workspace }
-                @else if (modalState().type === 'create_chat') { Start a fresh AI building session }
-                @else if (modalState().type === 'rename_chat') { Modify the label of this conversation }
-                @else if (modalState().type === 'delete_chat') { Permanently delete this chat memory }
+                @if (modalState().type === 'create_file') { {{ 'FORGE.MODAL_CREATE_FILE' | translate }} }
+                @else if (modalState().type === 'create_chat') { {{ 'FORGE.MODAL_CREATE_CHAT' | translate }} }
+                @else if (modalState().type === 'rename_chat') { {{ 'FORGE.MODAL_RENAME_CHAT' | translate }} }
+                @else if (modalState().type === 'delete_chat') { {{ 'FORGE.MODAL_DELETE_CHAT' | translate }} }
               </span>
             </div>
             <button (click)="closeModal()" style="color:#8F9CAE;background:none;border:none;cursor:pointer;font-size:14px;padding:4px;line-height:1;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='#8F9CAE'">✕</button>
@@ -630,7 +632,7 @@ interface RouteValidationResult {
           @if (modalState().type === 'delete_chat') {
             <div style="color:#FCA5A5;font-size:11px;font-family:monospace;line-height:1.6;display:flex;gap:10px;align-items:flex-start;background:rgba(127,29,29,0.15);border:1px solid rgba(239,68,68,0.15);border-radius:12px;padding:12px;">
               <span style="font-size:16px;line-height:1;">⚠️</span>
-              <span>Are you sure you want to delete this chat? This cannot be undone.</span>
+              <span>{{ 'FORGE.DELETE_CONFIRM' | translate }}</span>
             </div>
           } @else {
             <div style="display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:4px 14px;">
@@ -655,7 +657,7 @@ interface RouteValidationResult {
 
           <div style="display:flex;align-items:center;justify-content:flex-end;gap:10px;margin-top:6px;">
             <button (click)="closeModal()" style="padding:8px 18px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.04);border-radius:10px;font-size:10px;font-family:monospace;color:#8F9CAE;cursor:pointer;text-transform:uppercase;letter-spacing:0.1em;">
-              Cancel
+              {{ 'FORGE.CANCEL' | translate }}
             </button>
             <button (click)="confirmModal()" class="forge-button-glow" style="padding:8px 20px;border-radius:10px;font-size:10px;font-family:monospace;font-weight:700;color:#070709;cursor:pointer;text-transform:uppercase;letter-spacing:0.1em;border:none;display:flex;align-items:center;gap:6px;">
               @if (modalState().type === 'delete_chat') { <span>🗑 {{ modalState().confirmLabel }}</span> }
@@ -679,11 +681,6 @@ interface RouteValidationResult {
       --forge-muted: #8F9CAE;
       --forge-bg-deep: #070709;
       --forge-bg-surface: #111116;
-    }
-
-    :host ::ng-deep app-header {
-      position: relative;
-      z-index: 60;
     }
 
     :host .forge-surface {
@@ -711,6 +708,17 @@ interface RouteValidationResult {
     :host .forge-surface > * {
       position: relative;
       z-index: 1;
+    }
+
+    /* Keep site nav above the IDE workspace (workspace is a later sibling and was capturing clicks). */
+    :host .forge-surface > app-header {
+      z-index: 100;
+      pointer-events: auto;
+    }
+
+    :host .forge-workspace {
+      z-index: 1;
+      pointer-events: auto;
     }
 
     :host .forge-panel {
@@ -786,6 +794,56 @@ interface RouteValidationResult {
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
+
+    /* Mobile-only: keep IDE usable inside the visible viewport without changing desktop layout */
+    @media (max-width: 767px) {
+      :host {
+        display: block;
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100dvh;
+        max-height: 100dvh;
+        overflow: hidden;
+        z-index: 40;
+      }
+
+      :host .forge-surface {
+        height: 100%;
+        max-height: 100%;
+        overscroll-behavior: none;
+      }
+
+      :host .forge-surface::before {
+        inset: 0;
+        filter: blur(24px);
+        opacity: 0.55;
+      }
+
+      :host .forge-workspace {
+        min-height: 0;
+        flex: 1 1 auto;
+      }
+
+      :host .forge-panel {
+        backdrop-filter: blur(10px);
+      }
+
+      :host aside.forge-panel {
+        min-height: 0;
+        max-height: 100%;
+      }
+
+      :host .forge-composer {
+        max-height: 42dvh;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+      }
+
+      :host .forge-prompt {
+        min-height: 72px !important;
+      }
+    }
   `]
 })
 export class ForgeComponent implements OnInit {
@@ -817,11 +875,11 @@ export class ForgeComponent implements OnInit {
     { id: 'mobile' as const, label: 'Mobile' }
   ];
   readonly quickActions = [
-    { label: 'Make premium', prompt: 'Make this project dramatically more premium, polished, responsive, and launch-ready.' },
-    { label: 'Fix bugs', prompt: 'Check again, debug the project, repair broken HTML, preview, navigation, and missing pages.' },
-    { label: 'Add page', prompt: 'Add a complete new page with matching navigation, responsive design, and shared styling.' },
-    { label: 'Improve mobile', prompt: 'Improve the mobile and tablet experience with responsive spacing, navigation, and layout polish.' },
-    { label: 'Research trends', prompt: 'Research current design trends for this type of website and apply the best ideas to this project.' }
+    { labelKey: 'FORGE.QA_PREMIUM', prompt: 'Make this project dramatically more premium, polished, responsive, and launch-ready.' },
+    { labelKey: 'FORGE.QA_FIX', prompt: 'Check again, debug the project, repair broken HTML, preview, navigation, and missing pages.' },
+    { labelKey: 'FORGE.QA_PAGE', prompt: 'Add a complete new page with matching navigation, responsive design, and shared styling.' },
+    { labelKey: 'FORGE.QA_MOBILE', prompt: 'Improve the mobile and tablet experience with responsive spacing, navigation, and layout polish.' },
+    { labelKey: 'FORGE.QA_RESEARCH', prompt: 'Research current design trends for this type of website and apply the best ideas to this project.' }
   ];
   readonly builderSteps = ['Plan architecture', 'Generate files', 'Validate routes', 'Repair gaps', 'Score quality'];
 
@@ -955,6 +1013,14 @@ export class ForgeComponent implements OnInit {
   isExplorerOpen = signal(false);
   copyText = signal('Copy');
   uploadedFiles = signal<File[]>([]);
+
+  private t(key: string): string {
+    return this.translation.translate(key);
+  }
+
+  private resetReadyStatus() {
+    this.builderStatus.set(this.t('FORGE.READY_TO_BUILD'));
+  }
   
   fileInput = viewChild<ElementRef<HTMLInputElement>>('fileInput');
   chatTimeline = viewChild<ElementRef<HTMLDivElement>>('chatTimeline');
@@ -964,8 +1030,7 @@ export class ForgeComponent implements OnInit {
   public supabase = inject(SupabaseService);
   private sanitizer = inject(DomSanitizer);
   private http = inject(HttpClient);
-
-
+  private translation = inject(TranslationService);
   private router = inject(Router);
 
   constructor() {
@@ -975,6 +1040,8 @@ export class ForgeComponent implements OnInit {
   }
 
   ngOnInit() {
+    this.resetReadyStatus();
+    this.copyText.set(this.t('FORGE.COPY'));
     // Restrict access
     if (!this.supabase.hasForgeAccess()) {
       this.router.navigate(['/portal']);
@@ -1244,8 +1311,8 @@ export class ForgeComponent implements OnInit {
     const content = this.state.selectedFile()?.content;
     if (content) {
       navigator.clipboard.writeText(content).then(() => {
-        this.copyText.set('Copied!');
-        setTimeout(() => this.copyText.set('Copy'), 2000);
+        this.copyText.set(this.t('FORGE.COPIED'));
+        setTimeout(() => this.copyText.set(this.t('FORGE.COPY')), 2000);
       }).catch(() => {
         this.error.set('Clipboard access was blocked.');
       });
@@ -2146,7 +2213,7 @@ export class ForgeComponent implements OnInit {
       });
     } finally {
       this.loading.set(false);
-      this.builderStatus.set('Ready to build');
+      this.resetReadyStatus();
     }
 
     return true;
@@ -2431,7 +2498,7 @@ Return only valid JSON. If you build or update a project, include files or opera
       }
 
       this.loading.set(false);
-      this.builderStatus.set('Ready to build');
+      this.resetReadyStatus();
       this.state.completeWorkflowRun('Forge completed the creation workflow.');
       
       // Deduct credits locally and sync to Supabase
@@ -2443,12 +2510,12 @@ Return only valid JSON. If you build or update a project, include files or opera
     } catch (err: any) {
       console.error('Forge AI error:', err);
       this.loading.set(false);
-      this.builderStatus.set('Ready to build');
+      this.resetReadyStatus();
       this.state.completeWorkflowRun(err.message || 'Forge workflow failed.', 'failed');
       this.error.set(err.message || 'An error occurred during generation.');
     } finally {
       this.loading.set(false);
-      this.builderStatus.set('Ready to build');
+      this.resetReadyStatus();
     }
   }
 

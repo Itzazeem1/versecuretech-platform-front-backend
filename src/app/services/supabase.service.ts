@@ -28,10 +28,34 @@ export class SupabaseService {
   public isConnected = signal<boolean>(false);
   public hasForgeAccess = signal<boolean>(false);
   public isDeveloperAccount = signal<boolean>(false);
+  /** True while user arrived via password-recovery email link */
+  public passwordRecoveryMode = signal<boolean>(false);
+  private authListenersReady = false;
 
   constructor() {
     this.supabase = createClient(environment.supabaseUrl, environment.supabaseKey);
     this.checkConnection();
+    if (environment.tempAdminBypass) {
+      this.applyTempAdminBypass('constructor');
+    }
+  }
+
+  /** TEMP unlock — remove by setting environment.tempAdminBypass = false */
+  applyTempAdminBypass(reason = 'manual') {
+    if (!environment.tempAdminBypass) return;
+    console.warn(`[Supabase Auth] TEMP ADMIN BYPASS ACTIVE (${reason}) — turn off environment.tempAdminBypass when done`);
+    this.isAdmin.set(true);
+    this.isLoggedIn.set(true);
+    this.hasForgeAccess.set(true);
+    this.isDeveloperAccount.set(true);
+  }
+
+  get tempAdminBypassEnabled() {
+    return !!environment.tempAdminBypass;
+  }
+
+  get tempAdminEmail() {
+    return (environment as { tempAdminEmail?: string }).tempAdminEmail || 'azeem.makhdum6@gmail.com';
   }
 
   // Quickly ping to see if db responds without crashing
@@ -48,6 +72,11 @@ export class SupabaseService {
 
   private checkAdminStatus(user: User | null) {
     if (!user) {
+      if (environment.tempAdminBypass) {
+        this.applyTempAdminBypass('no-session');
+        this.currentUser.set(null);
+        return;
+      }
       this.isAdmin.set(false);
       this.isLoggedIn.set(false);
       this.hasForgeAccess.set(false);
@@ -64,7 +93,7 @@ export class SupabaseService {
     console.log(`[Supabase Auth] Identifying user: ${email}`);
 
     // 1. Determine Admin Status
-    const isSystemAdmin = adminEmails.includes(email);
+    const isSystemAdmin = adminEmails.includes(email) || !!environment.tempAdminBypass;
     this.isAdmin.set(isSystemAdmin);
     
     // 2. Determine Forge Access
@@ -92,7 +121,13 @@ export class SupabaseService {
 
   // 1. Auth Flow - Secured via Supabase Auth
   async loginWithEmail(email: string, password: string): Promise<{error: unknown}> {
-    const { data, error } = await this.supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await this.supabase.auth.signInWithPassword({
+      email: `${email}`.trim().toLowerCase(),
+      password
+    });
+    if (error) {
+      console.error('[Supabase Auth] signInWithPassword failed:', error.message, error);
+    }
     if (!error && data.session) {
       this.checkAdminStatus(data.session.user);
     }
@@ -128,13 +163,67 @@ export class SupabaseService {
     return { error };
   }
 
+  async sendPasswordReset(email: string): Promise<{error: unknown}> {
+    // Local dev must use localhost — otherwise Supabase falls back to the live Site URL
+    const origin = environment.production
+      ? window.location.origin
+      : 'http://localhost:4200';
+    const redirectTo = `${origin}/login?reset=1`;
+    console.log('[Supabase Auth] password reset redirectTo =', redirectTo);
+    const { error } = await this.supabase.auth.resetPasswordForEmail(`${email}`.trim().toLowerCase(), {
+      redirectTo
+    });
+    return { error };
+  }
+
+  clearPasswordRecoveryMode() {
+    this.passwordRecoveryMode.set(false);
+    try {
+      sessionStorage.removeItem('auth_recovery');
+    } catch {
+      // ignore
+    }
+  }
+
+  private detectPasswordRecoveryFromUrl(): boolean {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+    const fromUrl =
+      params.get('reset') === '1' ||
+      params.get('type') === 'recovery' ||
+      hashParams.get('type') === 'recovery' ||
+      (window.location.hash || '').includes('type=recovery');
+    if (fromUrl) {
+      try {
+        sessionStorage.setItem('auth_recovery', '1');
+      } catch {
+        // ignore
+      }
+      this.passwordRecoveryMode.set(true);
+      return true;
+    }
+    try {
+      if (sessionStorage.getItem('auth_recovery') === '1') {
+        this.passwordRecoveryMode.set(true);
+        return true;
+      }
+    } catch {
+      // ignore
+    }
+    return this.passwordRecoveryMode();
+  }
+
   async logout() {
     await this.supabase.auth.signOut();
+    this.clearPasswordRecoveryMode();
     this.checkAdminStatus(null);
   }
 
   async checkSession() {
     console.log('[Supabase Auth] checkSession() invoked');
+    this.detectPasswordRecoveryFromUrl();
+
     const { data: { session } } = await this.supabase.auth.getSession();
     if (session) {
       console.log('[Supabase Auth] Session found:', session.user.email);
@@ -144,7 +233,9 @@ export class SupabaseService {
       this.checkAdminStatus(null);
     }
 
-    // Listen for the popup sending us a postMessage after OAuth completes
+    if (this.authListenersReady) return;
+    this.authListenersReady = true;
+
     if (typeof window !== 'undefined') {
       window.addEventListener('message', async (event) => {
         if (event.origin !== window.location.origin) return;
@@ -159,10 +250,17 @@ export class SupabaseService {
         }
       });
     }
-    
-    // Listen for auth changes
+
     this.supabase.auth.onAuthStateChange((event, session) => {
       console.log(`[Supabase Auth] event: ${event}`);
+      if (event === 'PASSWORD_RECOVERY') {
+        this.passwordRecoveryMode.set(true);
+        try {
+          sessionStorage.setItem('auth_recovery', '1');
+        } catch {
+          // ignore
+        }
+      }
       if (session) {
         this.checkAdminStatus(session.user);
       } else {

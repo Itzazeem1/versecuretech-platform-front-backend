@@ -3,48 +3,49 @@ import { CommonModule } from '@angular/common';
 import { ActivatedRoute, RouterLink, ParamMap } from '@angular/router';
 import { HeaderComponent } from '../components/header';
 import { FooterComponent } from '../components/footer';
+import { TranslatePipe } from '../pipes/translate.pipe';
 import gsap from 'gsap';
 
 interface WorkData {
   id: string;
-  title: string;
+  titleKey: string;
   client: string;
-  category: string;
+  categoryKey: string;
   year: string;
-  description: string;
+  descriptionKey: string;
 }
 
 const WORKS: Record<string, WorkData> = {
   'project-alpha': {
     id: 'project-alpha',
-    title: 'Project Alpha',
+    titleKey: 'WORK_DETAIL.ALPHA_TITLE',
     client: 'FinTech Global',
-    category: 'Web Development',
+    categoryKey: 'WORK.WEB_DEV',
     year: '2025',
-    description: 'A complete digital transformation bridging latency constraints with a consumer-focused interface. We architected a scalable, high-performance web application operating securely at 60 frames per second.'
+    descriptionKey: 'WORK_DETAIL.ALPHA_DESC'
   },
   'nexus-security': {
     id: 'nexus-security',
-    title: 'Nexus Security',
+    titleKey: 'WORK_DETAIL.NEXUS_TITLE',
     client: 'Nexus Corp',
-    category: 'Cyber Security',
+    categoryKey: 'WORK.CYBER_SECURITY',
     year: '2024',
-    description: 'We deployed a sophisticated defense architecture spanning Information Security Governance, Penetration Testing, and Malware Analysis. By leveraging frameworks like MITRE ATT&CK for proactive threat modeling, we utilized offensive security tools such as Nmap and Burp Suite to identify and neutralize attack vectors. Our reverse-engineering protocols successfully identified persistence mechanisms, ensuring a zero-breach environment post-deployment.'
+    descriptionKey: 'WORK_DETAIL.NEXUS_DESC'
   },
   'quantum-app': {
     id: 'quantum-app',
-    title: 'Quantum App',
+    titleKey: 'WORK_DETAIL.QUANTUM_TITLE',
     client: 'Quantum Startups',
-    category: 'App Development',
+    categoryKey: 'WORK.APP_DEV',
     year: '2025',
-    description: 'A cross-platform mobile application operating without friction. Fluid animations, edge compute integration, and absolute offline resilience under a unified codebase.'
+    descriptionKey: 'WORK_DETAIL.QUANTUM_DESC'
   }
 };
 
 @Component({
   selector: 'app-work-detail',
   standalone: true,
-  imports: [CommonModule, HeaderComponent, FooterComponent, RouterLink],
+  imports: [CommonModule, HeaderComponent, FooterComponent, RouterLink, TranslatePipe],
   template: `
     <app-header></app-header>
     
@@ -53,19 +54,19 @@ const WORKS: Record<string, WorkData> = {
         <div class="max-w-6xl mx-auto px-6 relative z-10 flex flex-col items-center text-center">
           
           <div class="mb-8 inline-flex items-center gap-4 text-[var(--text-muted)] font-mono text-sm uppercase tracking-widest work-anim">
-            <span>{{ work()?.category }}</span>
+            <span>{{ (work()?.categoryKey || '') | translate }}</span>
             <span class="w-1 h-1 bg-[var(--accent-main)] rounded-full"></span>
             <span>{{ work()?.year }}</span>
           </div>
           
           <h1 class="huge-text font-display font-bold uppercase tracking-tighter mb-16 work-anim">
-            {{ work()?.title }}
+            {{ (work()?.titleKey || '') | translate }}
           </h1>
           
           <!-- Project Hero Image -->
           <div class="w-full h-[40vh] md:h-[60vh] relative mb-20 overflow-hidden work-anim glass-panel rounded-[2rem] glow-hover border border-[var(--text-primary)]/5 flex items-center justify-center">
              <img [src]="'/assets/images/' + work()?.id + '.png'" 
-                  [alt]="work()?.title"
+                  [alt]="(work()?.titleKey || '') | translate"
                   loading="lazy"
                   decoding="async"
                   class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-700">
@@ -76,19 +77,19 @@ const WORKS: Record<string, WorkData> = {
           <div class="grid grid-cols-1 md:grid-cols-12 gap-16 mb-32 w-full text-left">
             <div class="md:col-span-4 work-anim md:offset-y-12">
               <div class="border-t border-[var(--text-primary)]/5 pt-6 mb-8">
-                <h3 class="text-xs font-mono text-[var(--text-muted)] uppercase tracking-widest mb-2">Client Profile</h3>
+                <h3 class="text-xs font-mono text-[var(--text-muted)] uppercase tracking-widest mb-2">{{ 'WORK_DETAIL.CLIENT_PROFILE' | translate }}</h3>
                 <p class="text-2xl font-display font-medium">{{ work()?.client }}</p>
               </div>
               <div class="border-t border-[var(--text-primary)]/5 pt-6 mb-8">
-                <h3 class="text-xs font-mono text-[var(--text-muted)] uppercase tracking-widest mb-2">Vertical</h3>
-                <p class="text-2xl font-display font-medium">{{ work()?.category }}</p>
+                <h3 class="text-xs font-mono text-[var(--text-muted)] uppercase tracking-widest mb-2">{{ 'WORK_DETAIL.VERTICAL' | translate }}</h3>
+                <p class="text-2xl font-display font-medium">{{ (work()?.categoryKey || '') | translate }}</p>
               </div>
             </div>
             
             <div class="md:col-span-7 md:col-start-6 work-anim">
-              <h2 class="text-3xl font-display font-medium mb-8 text-[var(--text-muted)]">Operational Challenge</h2>
+              <h2 class="text-3xl font-display font-medium mb-8 text-[var(--text-muted)]">{{ 'WORK_DETAIL.CHALLENGE' | translate }}</h2>
               <p class="text-xl leading-relaxed font-light">
-                {{ work()?.description }}
+                {{ (work()?.descriptionKey || '') | translate }}
               </p>
             </div>
           </div>
@@ -106,16 +107,16 @@ const WORKS: Record<string, WorkData> = {
           </div>
           
           <div class="mt-32 md:mt-48 text-center work-anim">
-            <h2 class="text-3xl md:text-5xl font-display font-medium mb-8">Initialize deployment.</h2>
+            <h2 class="text-3xl md:text-5xl font-display font-medium mb-8">{{ 'WORK_DETAIL.INITIATE_DEPLOYMENT' | translate }}</h2>
             <a routerLink="/contact" class="tesla-btn inline-flex items-center gap-4 px-10 py-5 rounded-full border border-[var(--text-primary)]/20 bg-[var(--text-primary)] text-[var(--bg-main)] hover:bg-[var(--bg-main)] hover:text-[var(--text-primary)] transition-colors font-bold tracking-widest uppercase text-sm">
-              Commence Engineering
+              {{ 'WORK_DETAIL.COMMENCE_ENG' | translate }}
             </a>
           </div>
         </div>
       } @else {
         <div class="max-w-6xl mx-auto px-6 relative z-10 flex flex-col items-center justify-center min-h-[50vh]">
-          <h1 class="text-4xl font-display font-bold mb-4">Fragment Missing</h1>
-          <a routerLink="/work" class="tesla-btn text-xs uppercase tracking-widest border-b border-[var(--accent-main)] pb-1">Return to Matrix</a>
+          <h1 class="text-4xl font-display font-bold mb-4">{{ 'WORK_DETAIL.FRAGMENT_MISSING' | translate }}</h1>
+          <a routerLink="/work" class="tesla-btn text-xs uppercase tracking-widest border-b border-[var(--accent-main)] pb-1">{{ 'WORK_DETAIL.RETURN_TO_MATRIX' | translate }}</a>
         </div>
       }
     </main>
