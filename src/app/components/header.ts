@@ -2,11 +2,13 @@ import { Component, signal, afterNextRender, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { NeonButtonComponent } from './neon-button';
+import { LanguageSliderComponent } from './language-slider.component';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [CommonModule, RouterLink, RouterLinkActive, NeonButtonComponent],
+  imports: [CommonModule, RouterLink, RouterLinkActive, NeonButtonComponent, LanguageSliderComponent, TranslatePipe],
   template: `
     <!-- Top Header Navigation (Instantly Visible & Premium) -->
     <header class="fixed top-0 left-0 w-full z-[100] transition-all duration-300 pointer-events-auto" 
@@ -32,7 +34,7 @@ import { NeonButtonComponent } from './neon-button';
             
             <a routerLink="/services" routerLinkActive="text-[var(--text-primary)]"
                class="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer flex items-center gap-1">
-              Services <span class="material-icons text-[16px] transition-transform duration-300 group-hover:text-[var(--accent-main)]" [class.rotate-180]="dropdownOpen()">expand_more</span>
+              {{ 'NAV.SERVICES' | translate }} <span class="material-icons text-[16px] transition-transform duration-300 group-hover:text-[var(--accent-main)]" [class.rotate-180]="dropdownOpen()">expand_more</span>
             </a>
             
             <!-- Apple/Lando Dropdown Menu -->
@@ -45,8 +47,8 @@ import { NeonButtonComponent } from './neon-button';
                       <span class="material-icons text-[18px]">code</span>
                    </div>
                    <div class="flex flex-col">
-                     <span class="text-sm font-bold text-[var(--text-primary)] group-hover/item:text-[var(--accent-main)] transition-colors">Engineering</span>
-                     <span class="text-xs text-[var(--text-muted)] font-light mt-0.5">Performance & Scale</span>
+                     <span class="text-sm font-bold text-[var(--text-primary)] group-hover/item:text-[var(--accent-main)] transition-colors">{{ 'NAV.DROPDOWN_ENGINEERING' | translate }}</span>
+                     <span class="text-xs text-[var(--text-muted)] font-light mt-0.5">{{ 'NAV.DROPDOWN_ENGINEERING_SUB' | translate }}</span>
                    </div>
                  </a>
                  <a routerLink="/services/app-development" class="flex items-center gap-4 p-4 rounded-xl hover:bg-[var(--accent-main)]/10 border border-transparent hover:border-[var(--accent-main)]/20 transition-all group/item">
@@ -54,8 +56,8 @@ import { NeonButtonComponent } from './neon-button';
                       <span class="material-icons text-[18px]">smartphone</span>
                    </div>
                    <div class="flex flex-col">
-                     <span class="text-sm font-bold text-[var(--text-primary)] group-hover/item:text-[var(--accent-main)] transition-colors">App Development</span>
-                     <span class="text-xs text-[var(--text-muted)] font-light mt-0.5">iOS & Android</span>
+                     <span class="text-sm font-bold text-[var(--text-primary)] group-hover/item:text-[var(--accent-main)] transition-colors">{{ 'NAV.DROPDOWN_APP_DEV' | translate }}</span>
+                     <span class="text-xs text-[var(--text-muted)] font-light mt-0.5">{{ 'NAV.DROPDOWN_APP_DEV_SUB' | translate }}</span>
                    </div>
                  </a>
                  <a routerLink="/services/cyber-security" class="flex items-center gap-4 p-4 rounded-xl hover:bg-[var(--accent-main)]/10 border border-transparent hover:border-[var(--accent-main)]/20 transition-all group/item">
@@ -63,8 +65,8 @@ import { NeonButtonComponent } from './neon-button';
                       <span class="material-icons text-[18px]">security</span>
                    </div>
                    <div class="flex flex-col">
-                     <span class="text-sm font-bold text-[var(--text-primary)] group-hover/item:text-[var(--accent-main)] transition-colors">Protection</span>
-                     <span class="text-xs text-[var(--text-muted)] font-light mt-0.5">Absolute Security</span>
+                     <span class="text-sm font-bold text-[var(--text-primary)] group-hover/item:text-[var(--accent-main)] transition-colors">{{ 'NAV.DROPDOWN_PROTECTION' | translate }}</span>
+                     <span class="text-xs text-[var(--text-muted)] font-light mt-0.5">{{ 'NAV.DROPDOWN_PROTECTION_SUB' | translate }}</span>
                    </div>
                  </a>
                  <a routerLink="/services/seo-optimization" class="flex items-center gap-4 p-4 rounded-xl hover:bg-[var(--accent-main)]/10 border border-transparent hover:border-[var(--accent-main)]/20 transition-all group/item">
@@ -72,24 +74,25 @@ import { NeonButtonComponent } from './neon-button';
                       <span class="material-icons text-[18px]">trending_up</span>
                    </div>
                    <div class="flex flex-col">
-                     <span class="text-sm font-bold text-[var(--text-primary)] group-hover/item:text-[var(--accent-main)] transition-colors">Growth</span>
-                     <span class="text-xs text-[var(--text-muted)] font-light mt-0.5">SEO & Conversions</span>
+                     <span class="text-sm font-bold text-[var(--text-primary)] group-hover/item:text-[var(--accent-main)] transition-colors">{{ 'NAV.DROPDOWN_GROWTH' | translate }}</span>
+                     <span class="text-xs text-[var(--text-muted)] font-light mt-0.5">{{ 'NAV.DROPDOWN_GROWTH_SUB' | translate }}</span>
                    </div>
                  </a>
                </div>
             </div>
           </div>
           
-          <a routerLink="/about" routerLinkActive="text-[var(--text-primary)]" class="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--accent-main)] transition-colors">About</a>
-          <a routerLink="/work" routerLinkActive="text-[var(--text-primary)]" class="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--accent-main)] transition-colors">Work</a>
-          <a routerLink="/pricing" routerLinkActive="text-[var(--text-primary)]" class="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--accent-main)] transition-colors">Pricing</a>
+          <a routerLink="/about" routerLinkActive="text-[var(--text-primary)]" class="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--accent-main)] transition-colors">{{ 'NAV.ABOUT' | translate }}</a>
+          <a routerLink="/work" routerLinkActive="text-[var(--text-primary)]" class="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--accent-main)] transition-colors">{{ 'NAV.WORK' | translate }}</a>
+          <a routerLink="/pricing" routerLinkActive="text-[var(--text-primary)]" class="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--accent-main)] transition-colors">{{ 'NAV.PRICING' | translate }}</a>
           
           <div class="flex items-center gap-5 ml-6">
+            <app-language-slider></app-language-slider>
             <a routerLink="/login" class="text-sm font-medium text-[var(--text-muted)] hover:text-[var(--accent-main)] transition-colors flex items-center gap-1">
-              <span class="material-icons text-[16px]">person</span> Portal
+              <span class="material-icons text-[16px]">person</span> {{ 'NAV.PORTAL' | translate }}
             </a>
             <a routerLink="/contact" class="inline-flex shrink-0">
-              <app-neon-button text="Initialize" [compact]="true"></app-neon-button>
+              <app-neon-button [text]="'NAV.INITIALIZE' | translate" [compact]="true"></app-neon-button>
             </a>
           </div>
         </nav>
@@ -104,12 +107,16 @@ import { NeonButtonComponent } from './neon-button';
       @if (menuOpen()) {
         <div class="md:hidden fixed inset-0 w-full h-screen bg-[var(--bg-main)]/95 backdrop-blur-2xl z-40 p-8 flex flex-col justify-center gap-8">
           <div class="flex flex-col gap-8">
-            <span class="text-xs font-mono tracking-widest uppercase text-[var(--text-muted)]">Matrix Navigation</span>
-            <a routerLink="/" class="text-4xl font-display font-medium text-[var(--text-primary)]" (click)="toggleMenu()">Home</a>
-            <a routerLink="/services" class="text-4xl font-display font-medium text-[var(--text-primary)]" (click)="toggleMenu()">Services</a>
-            <a routerLink="/about" class="text-4xl font-display font-medium text-[var(--text-primary)]" (click)="toggleMenu()">About</a>
-            <a routerLink="/work" class="text-4xl font-display font-medium text-[var(--text-primary)]" (click)="toggleMenu()">Work</a>
-            <a routerLink="/contact" class="text-4xl font-display font-medium text-[var(--accent-main)] mt-4" (click)="toggleMenu()">Initialize Contact</a>
+            <span class="text-xs font-mono tracking-widest uppercase text-[var(--text-muted)]">{{ 'NAV.MATRIX_NAV' | translate }}</span>
+            <a routerLink="/" class="text-4xl font-display font-medium text-[var(--text-primary)]" (click)="toggleMenu()">{{ 'NAV.HOME' | translate }}</a>
+            <a routerLink="/services" class="text-4xl font-display font-medium text-[var(--text-primary)]" (click)="toggleMenu()">{{ 'NAV.SERVICES' | translate }}</a>
+            <a routerLink="/about" class="text-4xl font-display font-medium text-[var(--text-primary)]" (click)="toggleMenu()">{{ 'NAV.ABOUT' | translate }}</a>
+            <a routerLink="/work" class="text-4xl font-display font-medium text-[var(--text-primary)]" (click)="toggleMenu()">{{ 'NAV.WORK' | translate }}</a>
+            <a routerLink="/pricing" class="text-4xl font-display font-medium text-[var(--text-primary)]" (click)="toggleMenu()">{{ 'NAV.PRICING' | translate }}</a>
+            <a routerLink="/contact" class="text-4xl font-display font-medium text-[var(--accent-main)] mt-4" (click)="toggleMenu()">{{ 'NAV.INITIALIZE_CONTACT' | translate }}</a>
+            <div class="mt-4">
+              <app-language-slider></app-language-slider>
+            </div>
           </div>
         </div>
       }

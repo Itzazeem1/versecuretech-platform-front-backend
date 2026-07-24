@@ -1,10 +1,11 @@
 import { Component, PLATFORM_ID, inject, signal, OnInit } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
+import { TranslatePipe } from '../pipes/translate.pipe';
 
 @Component({
   selector: 'app-cookie-banner',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, TranslatePipe],
   template: `
     @if (!hasResponded()) {
       <div 
@@ -15,11 +16,10 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
           <div class="flex-1">
             <h3 class="text-[var(--text-primary)] font-display font-bold text-xl mb-2 flex items-center gap-2">
               <span class="material-icons text-[var(--accent-main)]">cookie</span>
-              System Cookies Validated
+              {{ 'COOKIE.TITLE' | translate }}
             </h3>
             <p class="text-[var(--text-muted)] text-sm max-w-2xl font-light">
-              We utilize essential cookies to ensure peak performance of this cinematic engine. 
-              Accept for the optimal interactive experience, or decline non-essential tracking.
+              {{ 'COOKIE.DESC' | translate }}
             </p>
           </div>
           <div class="flex gap-4 w-full md:w-auto mt-4 md:mt-0">
@@ -27,13 +27,13 @@ import { CommonModule, isPlatformBrowser } from '@angular/common';
               (click)="decline()" 
               class="flex-1 md:flex-none px-6 py-3 rounded-full border border-[var(--text-primary)]/20 text-[var(--text-muted)] font-mono text-sm hover:bg-[var(--text-primary)]/5 transition-colors"
             >
-              DECLINE
+              {{ 'COOKIE.DECLINE' | translate }}
             </button>
             <button 
               (click)="accept()" 
               class="flex-1 md:flex-none px-6 py-3 rounded-full bg-[var(--accent-main)] text-[var(--text-primary)] font-mono text-sm shadow-[0_0_20px_rgba(138,108,255,0.4)] hover:bg-[var(--accent-main)] hover:shadow-[0_0_20px_rgba(0,229,255,0.4)] transition-all font-bold"
             >
-              ACCEPT ALL
+              {{ 'COOKIE.ACCEPT_ALL' | translate }}
             </button>
           </div>
         </div>

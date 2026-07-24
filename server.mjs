@@ -17,69 +17,309 @@ app.use(cors());
 
 const developerEmails = ['azeem.makhdum6@gmail.com', 'abbas585@gmail.com'];
 const accessStorePath = join(__dirname, 'forge-access.json');
+/** Pack sizes from Pricing page */
+const FORGE_BUNDLE_CREDITS = 100;
+const ENTERPRISE_CREDITS = 500;
+
+function defaultCreditsForPlan(plan = 'forge_bundle') {
+  return plan === 'enterprise' ? ENTERPRISE_CREDITS : FORGE_BUNDLE_CREDITS;
+}
+
+function planLabel(plan = 'forge_bundle') {
+  return plan === 'enterprise' ? 'Enterprise (custom)' : 'Forge Bundle';
+}
+
+function decodeAccessStoreBuffer(buf) {
+  // Windows editors sometimes save this file as UTF-16 LE (null bytes between chars)
+  const looksUtf16Le =
+    (buf.length >= 2 && buf[0] === 0xff && buf[1] === 0xfe) ||
+    (buf.length >= 4 && buf[0] === 0x7b && buf[1] === 0x00) ||
+    (buf.length >= 4 && buf[1] === 0x00 && buf[3] === 0x00 && buf[0] !== 0x00);
+  if (looksUtf16Le) {
+    const text = (buf[0] === 0xff && buf[1] === 0xfe ? buf.slice(2) : buf).toString('utf16le');
+    return { text: text.replace(/^\uFEFF/, '').trim(), needsUtf8Rewrite: true };
+  }
+  return {
+    text: buf.toString('utf8').replace(/^\uFEFF/, '').trim(),
+    needsUtf8Rewrite: false
+  };
+}
+
+function normalizeForgeAccessStore(parsed) {
+  const allowedEmails = Array.isArray(parsed.allowedEmails)
+    ? parsed.allowedEmails.map((email) => `${email}`.toLowerCase())
+    : [];
+  const extraDevelopers = Array.isArray(parsed.developerEmails)
+    ? parsed.developerEmails.map((email) => `${email}`.toLowerCase())
+    : [];
+  const adminEmails = Array.isArray(parsed.adminEmails)
+    ? parsed.adminEmails.map((email) => `${email}`.toLowerCase())
+    : [];
+  const clientMeta =
+    parsed.clientMeta && typeof parsed.clientMeta === 'object' ? { ...parsed.clientMeta } : {};
+  for (const email of allowedEmails) {
+    if (!clientMeta[email]) {
+      clientMeta[email] = {
+        plan: 'forge_bundle',
+        credits: FORGE_BUNDLE_CREDITS,
+        purchases: 1
+      };
+    }
+  }
+  return { allowedEmails, developerEmails: extraDevelopers, adminEmails, clientMeta };
+}
+
+function defaultForgeAccessStore() {
+  return {
+    allowedEmails: ['test@example.com'],
+    developerEmails: [],
+    adminEmails: [],
+    clientMeta: {
+      'test@example.com': {
+        plan: 'forge_bundle',
+        credits: FORGE_BUNDLE_CREDITS,
+        purchases: 1
+      }
+    }
+  };
+}
+
+function backupCorruptAccessStore(reason) {
+  try {
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = join(__dirname, `forge-access.corrupt.${stamp}.json`);
+    writeFileSync(backupPath, readFileSync(accessStorePath));
+    console.warn(`Forge access store backup saved (${reason}):`, backupPath);
+  } catch (backupError) {
+    console.warn('Could not backup corrupt Forge access store:', backupError.message);
+  }
+}
+
+function parseAccessStoreRaw(raw) {
+  if (!raw || raw[0] !== '{') {
+    throw new Error('Forge access store is empty or not JSON object');
+  }
+  return JSON.parse(raw);
+}
 
 function readForgeAccessStore() {
+  const empty = { allowedEmails: [], developerEmails: [], adminEmails: [], clientMeta: {} };
+
   try {
     if (!existsSync(accessStorePath)) {
-      return { allowedEmails: ['test@example.com'] };
+      const initial = defaultForgeAccessStore();
+      writeForgeAccessStore(initial);
+      return initial;
     }
-    const parsed = JSON.parse(readFileSync(accessStorePath, 'utf8'));
-    return {
-      allowedEmails: Array.isArray(parsed.allowedEmails)
-        ? parsed.allowedEmails.map((email) => `${email}`.toLowerCase())
-        : []
-    };
+
+    const buf = readFileSync(accessStorePath);
+    let decoded = decodeAccessStoreBuffer(buf);
+    let parsed;
+
+    try {
+      parsed = parseAccessStoreRaw(decoded.text);
+    } catch (primaryError) {
+      // Last-chance UTF-16 recovery if detection missed
+      try {
+        const fallbackText = buf.toString('utf16le').replace(/^\uFEFF/, '').trim();
+        parsed = parseAccessStoreRaw(fallbackText);
+        decoded = { text: fallbackText, needsUtf8Rewrite: true };
+        console.warn('Forge access store recovered via UTF-16 fallback:', primaryError.message);
+      } catch {
+        throw primaryError;
+      }
+    }
+
+    const store = normalizeForgeAccessStore(parsed);
+    if (decoded.needsUtf8Rewrite) {
+      console.warn('Rewriting forge-access.json as UTF-8');
+      writeForgeAccessStore(store);
+    }
+    return store;
   } catch (error) {
     console.warn('Failed to read Forge access store:', error.message);
-    return { allowedEmails: [] };
+    if (existsSync(accessStorePath)) {
+      backupCorruptAccessStore(error.message);
+    }
+    try {
+      const initial = defaultForgeAccessStore();
+      writeForgeAccessStore(initial);
+      return initial;
+    } catch {
+      return empty;
+    }
   }
 }
 
 function writeForgeAccessStore(store) {
-  writeFileSync(accessStorePath, JSON.stringify(store, null, 2));
+  const payload = JSON.stringify(
+    {
+      allowedEmails: store.allowedEmails || [],
+      developerEmails: store.developerEmails || [],
+      adminEmails: store.adminEmails || [],
+      clientMeta: store.clientMeta || {}
+    },
+    null,
+    2
+  );
+  // Explicit UTF-8 bytes — avoids Windows UTF-16 encoding surprises
+  writeFileSync(accessStorePath, Buffer.from(`${payload}\n`, 'utf8'));
 }
 
-function isAdminEmail(email = '') {
+function isSystemDeveloper(email = '') {
   return developerEmails.includes(`${email}`.toLowerCase());
 }
 
-function getForgeAccessPayload(email = '', includeAllowedEmails = false) {
+function isAdminEmail(email = '') {
+  const normalized = `${email}`.toLowerCase();
+  if (isSystemDeveloper(normalized)) return true;
+  try {
+    const store = readForgeAccessStore();
+    return (store.adminEmails || []).includes(normalized);
+  } catch {
+    return false;
+  }
+}
+
+function buildSeatsList(store) {
+  const seats = [];
+  const adminSet = new Set([...(store.adminEmails || []), ...developerEmails]);
+  for (const email of developerEmails) {
+    seats.push({
+      email,
+      role: 'developer',
+      plan: null,
+      credits: 999999,
+      isAdmin: true,
+      label: 'Developer · admin panel · unlimited credits',
+      revocable: false
+    });
+  }
+  for (const email of store.developerEmails || []) {
+    if (isSystemDeveloper(email)) continue;
+    seats.push({
+      email,
+      role: 'developer',
+      plan: null,
+      credits: 999999,
+      isAdmin: adminSet.has(email),
+      label: 'Developer · admin panel · unlimited credits',
+      revocable: true
+    });
+  }
+  for (const email of store.allowedEmails || []) {
+    if (isSystemDeveloper(email) || (store.developerEmails || []).includes(email)) continue;
+    const meta = store.clientMeta?.[email] || {
+      plan: 'forge_bundle',
+      credits: FORGE_BUNDLE_CREDITS,
+      purchases: 1
+    };
+    const credits = Number.isFinite(meta.credits) ? meta.credits : defaultCreditsForPlan(meta.plan);
+    const purchases = Number.isFinite(meta.purchases) ? meta.purchases : 1;
+    seats.push({
+      email,
+      role: 'client',
+      plan: meta.plan || 'forge_bundle',
+      credits,
+      purchases,
+      isAdmin: false,
+      label: `Paid · ${planLabel(meta.plan)} · ${credits} credits${purchases > 1 ? ` · ${purchases} packs` : ''}`,
+      revocable: true
+    });
+  }
+  return seats.sort((a, b) => a.email.localeCompare(b.email));
+}
+
+function getForgeAccessPayload(email = '', includeSeats = false) {
   const normalizedEmail = `${email}`.toLowerCase();
   const store = readForgeAccessStore();
-  const isDeveloper = isAdminEmail(normalizedEmail);
-  const hasAccess = isDeveloper || store.allowedEmails.includes(normalizedEmail);
+  const isDeveloper =
+    isSystemDeveloper(normalizedEmail) ||
+    (store.developerEmails || []).includes(normalizedEmail);
+  const isAdmin =
+    isSystemDeveloper(normalizedEmail) ||
+    (store.adminEmails || []).includes(normalizedEmail);
+  const isClient = (store.allowedEmails || []).includes(normalizedEmail);
+  const hasAccess = isDeveloper || isClient;
+  const clientCredits = store.clientMeta?.[normalizedEmail]?.credits;
   const payload = {
     email: normalizedEmail,
     hasAccess,
     isDeveloper,
-    credits: isDeveloper ? 999999 : null
+    isAdmin,
+    role: isDeveloper ? 'developer' : isClient ? 'client' : 'none',
+    plan: isClient ? store.clientMeta?.[normalizedEmail]?.plan || 'forge_bundle' : null,
+    credits: isDeveloper
+      ? 999999
+      : isClient
+        ? Number.isFinite(clientCredits)
+          ? clientCredits
+          : defaultCreditsForPlan(store.clientMeta?.[normalizedEmail]?.plan)
+        : 0
   };
-  if (includeAllowedEmails) {
-    payload.allowedEmails = Array.from(new Set([...developerEmails, ...store.allowedEmails])).sort();
+  if (includeSeats) {
+    payload.seats = buildSeatsList(store);
+    payload.adminEmails = Array.from(
+      new Set([...developerEmails, ...(store.adminEmails || [])])
+    ).sort();
+    payload.allowedEmails = Array.from(
+      new Set([
+        ...developerEmails,
+        ...(store.developerEmails || []),
+        ...(store.allowedEmails || [])
+      ])
+    ).sort();
   }
   return payload;
 }
 
-// Premium Email Configuration
+// Hostinger business email (hello@versecuretech.com) — credentials via .env
+const smtpUser = process.env.SMTP_USER || 'hello@versecuretech.com';
+const smtpPass = process.env.SMTP_PASS || '';
+const smtpHost = process.env.SMTP_HOST || 'smtp.hostinger.com';
+const smtpPort = parseInt(process.env.SMTP_PORT || '465', 10);
+const smtpSecure = process.env.SMTP_SECURE
+  ? process.env.SMTP_SECURE === 'true'
+  : smtpPort === 465;
+const contactFrom = process.env.CONTACT_FROM || `"Versecure Tech" <${smtpUser}>`;
+const contactNotifyTo =
+  process.env.CONTACT_NOTIFY_TO ||
+  'hello@versecuretech.com,azeem.makhdum6@gmail.com,abbas585@gmail.com';
+
 const transporter = nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false, // TLS
-    auth: {
-      user: 'hello.versecure@gmail.com',
-      pass: 'gvdnodqlrbyhlamb'
-    }
+  host: smtpHost,
+  port: smtpPort,
+  secure: smtpSecure,
+  auth: smtpPass
+    ? {
+        user: smtpUser,
+        pass: smtpPass
+      }
+    : undefined
 });
+
+if (!smtpPass) {
+  console.warn(
+    'SMTP_PASS is not set. Contact form emails will fail until you add your Hostinger mailbox password to .env'
+  );
+}
 
 // Routing for the Contact Form
 app.post('/api/contact', async (req, res) => {
-  const { firstName, lastName, email, service, message } = req.body;
-  
+  const { firstName, lastName, email, service, message, company, preferredTime } = req.body;
+
+  if (!smtpPass) {
+    return res.status(500).json({
+      error: 'Email is not configured. Set SMTP_PASS for hello@versecuretech.com in .env'
+    });
+  }
+
   try {
-    // 1. Admin Alert (Premium Theme)
+    // 1. Inbox alert to business email (+ optional team notify list)
     await transporter.sendMail({
-      from: '"Versecure Priority" <hello.versecure@gmail.com>',
-      to: 'azeem.makhdum6@gmail.com, abbas585@gmail.com',
+      from: contactFrom,
+      to: contactNotifyTo,
+      replyTo: email,
       subject: `New Lead: ${firstName} ${lastName} - ${service}`,
       html: `
         <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #050505; color: #ffffff; padding: 40px 20px;">
@@ -100,6 +340,18 @@ app.post('/api/contact', async (req, res) => {
                 <p style="margin: 0; font-size: 16px; color: #fff;">${service}</p>
               </div>
 
+              ${company ? `
+              <div style="margin-bottom: 32px;">
+                <p style="margin: 0 0 8px 0; font-size: 12px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em;">Company</p>
+                <p style="margin: 0; font-size: 16px; color: #fff;">${company}</p>
+              </div>` : ''}
+
+              ${preferredTime ? `
+              <div style="margin-bottom: 32px;">
+                <p style="margin: 0 0 8px 0; font-size: 12px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em;">Preferred Time</p>
+                <p style="margin: 0; font-size: 16px; color: #fff;">${preferredTime}</p>
+              </div>` : ''}
+
               <div style="margin-bottom: 32px; padding: 24px; background-color: #111; border-radius: 12px; border: 1px solid #1a1a1a;">
                 <p style="margin: 0 0 12px 0; font-size: 12px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.05em;">Message Brief</p>
                 <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #d1d5db; font-style: italic;">"${message}"</p>
@@ -108,17 +360,18 @@ app.post('/api/contact', async (req, res) => {
               <a href="mailto:${email}" style="display: inline-block; padding: 12px 24px; background-color: #fff; color: #000; text-decoration: none; font-weight: 600; font-size: 14px; border-radius: 8px; transition: all 0.2s;">Reply Instantly</a>
             </div>
             <div style="padding: 20px; background-color: #050505; border-top: 1px solid #1a1a1a; text-align: center;">
-              <p style="margin: 0; font-size: 10px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.1em;">Internal Notification Only &bull; Versecure Tech</p>
+              <p style="margin: 0; font-size: 10px; color: #4b5563; text-transform: uppercase; letter-spacing: 0.1em;">Delivered via ${smtpUser} &bull; Versecure Tech</p>
             </div>
           </div>
         </div>
       `
     });
 
-    // 2. Premium User Confirmation
+    // 2. Confirmation to the visitor (sent from business email)
     await transporter.sendMail({
-      from: '"Versecure Tech" <hello.versecure@gmail.com>',
+      from: contactFrom,
       to: email,
+      replyTo: smtpUser,
       subject: `We received your request, ${firstName}`,
       html: `
         <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #050505; color: #ffffff; padding: 60px 20px; text-align: center;">
@@ -141,6 +394,7 @@ app.post('/api/contact', async (req, res) => {
               <div style="padding-top: 32px; border-top: 1px solid #1a1a1a;">
                 <p style="margin: 0; font-size: 14px; color: #9ca3af;">Best regards,</p>
                 <p style="margin: 4px 0 0 0; font-size: 16px; font-weight: 600; color: #fff;">The Versecure Engineering Team</p>
+                <p style="margin: 8px 0 0 0; font-size: 13px; color: #6b7280;">${smtpUser}</p>
               </div>
             </div>
             <div style="padding: 24px; background-color: #050505; border-top: 1px solid #1a1a1a; text-align: center;">
@@ -152,7 +406,7 @@ app.post('/api/contact', async (req, res) => {
         </div>
       `
     });
-    console.log("Custom Ultra-Premium Email Blasted Successfully!");
+    console.log(`Contact emails sent via ${smtpUser}`);
     res.json({ success: true });
   } catch (e) {
     console.error("Email send failed:", e);
@@ -182,18 +436,92 @@ app.get('/api/admin/forge-access', (req, res) => {
 });
 
 app.post('/api/admin/forge-access/grant', (req, res) => {
+  try {
   const adminEmail = `${req.body?.adminEmail || ''}`.toLowerCase();
   const targetEmail = `${req.body?.email || ''}`.toLowerCase().trim();
+  const role = `${req.body?.role || 'client'}`.toLowerCase();
+  let plan = `${req.body?.plan || 'forge_bundle'}`.toLowerCase();
+  if (plan !== 'enterprise' && plan !== 'forge_bundle') plan = 'forge_bundle';
+  const packDefault = defaultCreditsForPlan(plan);
+  const creditsRaw = Number(req.body?.credits);
+  const packCredits = Number.isFinite(creditsRaw) && creditsRaw > 0 ? Math.floor(creditsRaw) : packDefault;
+
   if (!isAdminEmail(adminEmail)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(targetEmail)) {
     return res.status(400).json({ error: 'Valid email required' });
   }
+  if (role !== 'developer' && role !== 'client') {
+    return res.status(400).json({ error: 'Role must be developer or client' });
+  }
+  if (isSystemDeveloper(targetEmail)) {
+    return res.status(400).json({ error: 'System developers already have unlimited access' });
+  }
+
   const store = readForgeAccessStore();
-  store.allowedEmails = Array.from(new Set([...store.allowedEmails, targetEmail])).sort();
+  store.developerEmails = store.developerEmails || [];
+  store.allowedEmails = store.allowedEmails || [];
+  store.adminEmails = store.adminEmails || [];
+  store.clientMeta = store.clientMeta || {};
+
+  let grantResult = { refilled: false, added: 0, credits: 0, purchases: 0, plan: null };
+
+  if (role === 'developer') {
+    // Developer = Forge unlimited + Admin panel access
+    store.developerEmails = Array.from(new Set([...store.developerEmails, targetEmail])).sort();
+    store.adminEmails = Array.from(new Set([...store.adminEmails, targetEmail])).sort();
+    store.allowedEmails = store.allowedEmails.filter((email) => email !== targetEmail);
+    delete store.clientMeta[targetEmail];
+    grantResult = {
+      refilled: false,
+      added: 0,
+      credits: 999999,
+      purchases: 0,
+      plan: null,
+      role: 'developer',
+      isAdmin: true
+    };
+  } else {
+    store.allowedEmails = Array.from(new Set([...store.allowedEmails, targetEmail])).sort();
+    store.developerEmails = store.developerEmails.filter((email) => email !== targetEmail);
+    store.adminEmails = store.adminEmails.filter((email) => email !== targetEmail);
+
+    const existing = store.clientMeta[targetEmail];
+    const prevCredits = Number.isFinite(existing?.credits) ? existing.credits : 0;
+    const prevPurchases = Number.isFinite(existing?.purchases) ? existing.purchases : 0;
+    // Re-grant / repurchase = refill by adding another pack onto remaining balance
+    const refilled = !!existing;
+    const nextCredits = refilled ? prevCredits + packCredits : packCredits;
+    const nextPurchases = prevPurchases + 1;
+
+    store.clientMeta[targetEmail] = {
+      plan,
+      credits: nextCredits,
+      purchases: nextPurchases,
+      lastPackCredits: packCredits,
+      updatedAt: new Date().toISOString()
+    };
+
+    grantResult = {
+      role: 'client',
+      plan,
+      refilled,
+      added: packCredits,
+      credits: nextCredits,
+      purchases: nextPurchases,
+      isAdmin: false
+    };
+  }
+
   writeForgeAccessStore(store);
-  return res.json(getForgeAccessPayload(adminEmail, true));
+  const payload = getForgeAccessPayload(adminEmail, true);
+  payload.grant = grantResult;
+  return res.json(payload);
+  } catch (error) {
+    console.error('Forge grant failed:', error);
+    return res.status(500).json({ error: error.message || 'Failed to grant Forge access' });
+  }
 });
 
 app.post('/api/admin/forge-access/revoke', (req, res) => {
@@ -202,13 +530,26 @@ app.post('/api/admin/forge-access/revoke', (req, res) => {
   if (!isAdminEmail(adminEmail)) {
     return res.status(403).json({ error: 'Admin access required' });
   }
-  if (isAdminEmail(targetEmail)) {
-    return res.status(400).json({ error: 'Developer access cannot be revoked' });
+  if (isSystemDeveloper(targetEmail)) {
+    return res.status(400).json({ error: 'System developer access cannot be revoked' });
   }
   const store = readForgeAccessStore();
-  store.allowedEmails = store.allowedEmails.filter((email) => email !== targetEmail);
+  store.allowedEmails = (store.allowedEmails || []).filter((email) => email !== targetEmail);
+  store.developerEmails = (store.developerEmails || []).filter((email) => email !== targetEmail);
+  store.adminEmails = (store.adminEmails || []).filter((email) => email !== targetEmail);
+  if (store.clientMeta) delete store.clientMeta[targetEmail];
   writeForgeAccessStore(store);
   return res.json(getForgeAccessPayload(adminEmail, true));
+});
+
+app.get('/api/admin/panel-access', (req, res) => {
+  const email = typeof req.query.email === 'string' ? req.query.email.toLowerCase() : '';
+  if (!email) return res.status(400).json({ error: 'Email required' });
+  return res.json({
+    email,
+    isAdmin: isAdminEmail(email),
+    isSystemAdmin: isSystemDeveloper(email)
+  });
 });
 
 async function researchWeb(query) {
@@ -452,16 +793,47 @@ If you modify files, prefer operations like {"type":"update","path":"index.html"
   }
 });
 
-// Serve the static Angular frontend
+// Serve email logo + other public assets at site root (needed for email <img> URLs)
+app.use(express.static(join(__dirname, 'public'), {
+  maxAge: '7d',
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('email-logo.png')) {
+      res.setHeader('Cache-Control', 'public, max-age=604800');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+    }
+  }
+}));
+
+// Serve the static Angular frontend (long-cache hashed assets; HTML stays fresh)
 const browserPath = join(__dirname, 'dist', 'app', 'browser');
-app.use(express.static(browserPath));
+app.use(express.static(browserPath, {
+  maxAge: '1y',
+  immutable: true,
+  setHeaders(res, filePath) {
+    if (filePath.endsWith('index.html')) {
+      res.setHeader('Cache-Control', 'no-cache');
+    }
+  }
+}));
 
 // Send all other requests to index.html so Angular's router takes over
 app.use((req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
   res.sendFile(join(browserPath, 'index.html'));
 });
 
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
+const PORT = Number(process.env.PORT) || 4000;
+const server = app.listen(PORT, () => {
   console.log('Versecure Standalone Server listening on port ' + PORT);
+});
+
+server.on('error', (error) => {
+  if (error?.code === 'EADDRINUSE') {
+    console.error(
+      `Port ${PORT} is already in use. Stop the other process, or set PORT to a free port.`
+    );
+  } else {
+    console.error('Server failed to start:', error);
+  }
+  process.exit(1);
 });
