@@ -45,3 +45,16 @@ __screenshots__/
 # System files
 .DS_Store
 Thumbs.db
+
+# Portal ticket uploads (keep folder)
+public/uploads/portal/*
+!public/uploads/portal/.gitkeep
+
+
+portal-data.backup.*.json
+forge-access.backup.*.json
+
+
+portal-data.json
+_orig_*.ts
+
