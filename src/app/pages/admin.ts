@@ -974,7 +974,7 @@ export class AdminComponent {
     this.pendingDeleteId.set(id);
     this.openConfirm(
       'Delete project?',
-      'Delete this client project? They may lose ticket access if it was their only project.',
+      'Delete this client project? If it is their only project, support tickets lock immediately.',
       'delete-project'
     );
   }
@@ -992,7 +992,11 @@ export class AdminComponent {
       if (!response.ok) throw new Error(data.error || 'Failed to delete');
       this.portalProjects.set(Array.isArray(data.projects) ? data.projects : []);
       if (this.projectFormId() === id) this.resetProjectForm();
-      this.portalProjectsMsg.set('Project deleted.');
+      this.portalProjectsMsg.set(
+        data.ticketsLocked
+          ? 'Project deleted — client support tickets are now locked.'
+          : 'Project deleted.'
+      );
     } catch (error: any) {
       this.portalProjectsMsg.set(error.message || 'Failed to delete project');
     } finally {

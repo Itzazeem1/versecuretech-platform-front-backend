@@ -21,6 +21,15 @@ import {
   uploadFileToStorage
 } from './portal-store.mjs';
 import { resolveRequestUser, requireMatchingUser, supabaseAuthConfigured, strictAuthRequired } from './auth-helpers.mjs';
+import {
+  projectCreatedEmail,
+  projectUpdatedEmail,
+  ticketCreatedTeamEmail,
+  ticketClientReplyTeamEmail,
+  ticketAdminReplyClientEmail,
+  ticketStatusClientEmail,
+  ticketsLockedEmail
+} from './portal-email.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -664,7 +673,7 @@ app.get('/api/portal/meta', (_req, res) => {
 async function clientHasActiveService(email) {
   const normalized = normalizeEmail(email);
   if (!isValidEmail(normalized)) return false;
-  if (isAdminEmail(normalized)) return true;
+  // Tickets follow projects only — admins are not auto-unlocked without a project
   const projects = await portalStore.listProjects(normalized);
   return projects.length > 0;
 }
@@ -694,7 +703,7 @@ app.get('/api/portal/projects', async (req, res) => {
     const auth = await requirePortalClient(req);
     if (!auth.ok) return res.status(auth.status || 401).json({ error: auth.error });
     const projects = await portalStore.listProjects(auth.email);
-    const canUseTickets = projects.length > 0 || isAdminEmail(auth.email);
+    const canUseTickets = projects.length > 0;
     return res.json({ projects, canUseTickets, authMode: auth.strict ? 'jwt' : 'relaxed' });
   } catch (error) {
     return res.status(500).json({ error: error.message || 'Failed to load projects' });
@@ -729,12 +738,13 @@ app.post('/api/portal/tickets', async (req, res) => {
     const result = await portalStore.createTicket({ email, subject, message, priority });
     const ticket = result.ticket;
 
+    const createdMail = ticketCreatedTeamEmail({ email, ticket, message });
     await sendTicketMail({
       to: contactNotifyTo,
       replyTo: email,
-      subject: `[Priority Support] ${ticket.subject}`,
-      text: `New support ticket from ${email}\nPriority: ${ticket.priority}\n\n${message}\n\nTicket ID: ${ticket.id}`,
-      html: `<div style="font-family:sans-serif;line-height:1.5"><h2>Priority Support Ticket</h2><p><strong>From:</strong> ${email}</p><p><strong>Priority:</strong> ${ticket.priority}</p><p><strong>Subject:</strong> ${ticket.subject}</p><p style="white-space:pre-wrap">${message.replace(/</g,'&lt;')}</p><p style="color:#666;font-size:12px">Ticket ID: ${ticket.id}</p></div>`
+      subject: createdMail.subject,
+      text: createdMail.text,
+      html: createdMail.html
     });
 
     emitPortalUpdate({ type: 'ticket_created', ticketId: ticket.id, clientEmail: email });
@@ -764,12 +774,13 @@ app.post('/api/portal/tickets/:id/messages', async (req, res) => {
     if (normalizeEmail(result.ticket.clientEmail) !== email) {
       return res.status(403).json({ error: 'Not your ticket' });
     }
+    const replyMail = ticketClientReplyTeamEmail({ email, ticket: result.ticket, body });
     await sendTicketMail({
       to: contactNotifyTo,
       replyTo: email,
-      subject: `[Ticket Reply] ${result.ticket.subject}`,
-      text: `Client reply from ${email}\n\n${body}\n\nTicket ID: ${result.ticket.id}`,
-      html: `<div style="font-family:sans-serif"><h2>Client Ticket Reply</h2><p><strong>From:</strong> ${email}</p><p style="white-space:pre-wrap">${body.replace(/</g,'&lt;')}</p></div>`
+      subject: replyMail.subject,
+      text: replyMail.text,
+      html: replyMail.html
     });
     emitPortalUpdate({ type: 'ticket_message', ticketId: result.ticket.id, clientEmail: email });
     return res.json({ success: true, ticket: result.ticket, tickets: result.tickets });
@@ -831,19 +842,11 @@ app.post('/api/admin/portal/projects', async (req, res) => {
 
     const statusChanged = previous && (previous.status !== project.status || Number(previous.progress) !== Number(project.progress));
     if (isNew) {
-      await sendTicketMail({
-        to: project.clientEmail,
-        subject: `Your project is live: ${project.title}`,
-        text: `Hi,\n\nWe assigned a project to your Versecure client portal.\n\nProject: ${project.title}\nStatus: ${project.status}\nProgress: ${project.progress}%\n\nSign in to your portal to track progress and open support tickets.\n\n— Versecure Tech`,
-        html: `<div style="font-family:sans-serif;line-height:1.5"><h2>Your project is live</h2><p><strong>${project.title}</strong></p><p>Status: ${project.status}<br/>Progress: ${project.progress}%</p><p>Sign in to your portal to track progress. Priority support tickets are now unlocked for your account.</p><p style="color:#666">— Versecure Tech</p></div>`
-      });
+      const mail = projectCreatedEmail(project);
+      await sendTicketMail({ to: project.clientEmail, ...mail });
     } else if (statusChanged) {
-      await sendTicketMail({
-        to: project.clientEmail,
-        subject: `Project update: ${project.title}`,
-        text: `Hi,\n\nYour project was updated.\n\nProject: ${project.title}\nStatus: ${project.status}\nProgress: ${project.progress}%\n\n— Versecure Tech`,
-        html: `<div style="font-family:sans-serif;line-height:1.5"><h2>Project update</h2><p><strong>${project.title}</strong></p><p>Status: ${project.status}<br/>Progress: ${project.progress}%</p><p style="color:#666">— Versecure Tech</p></div>`
-      });
+      const mail = projectUpdatedEmail(project);
+      await sendTicketMail({ to: project.clientEmail, ...mail });
     }
 
     emitPortalUpdate({ type: 'project_saved', clientEmail: project.clientEmail, projectId: project.id });
@@ -858,8 +861,24 @@ app.post('/api/admin/portal/projects/delete', async (req, res) => {
     const auth = await requirePortalAdmin(req);
     if (!auth.ok) return res.status(auth.status || 403).json({ error: auth.error });
     const result = await portalStore.deleteProject(String(req.body?.id || '').trim());
-    emitPortalUpdate({ type: 'project_deleted' });
-    return res.json({ success: true, projects: result.projects });
+    const ticketsLocked = !!result.ticketsLocked;
+    if (ticketsLocked && result.clientEmail) {
+      const lockMail = ticketsLockedEmail({ clientEmail: result.clientEmail });
+      await sendTicketMail({ to: result.clientEmail, ...lockMail });
+    }
+    emitPortalUpdate({
+      type: 'project_deleted',
+      clientEmail: result.clientEmail,
+      ticketsLocked,
+      remainingForClient: result.remainingForClient ?? 0
+    });
+    return res.json({
+      success: true,
+      projects: result.projects,
+      clientEmail: result.clientEmail,
+      ticketsLocked,
+      remainingForClient: result.remainingForClient ?? 0
+    });
   } catch (error) {
     return res.status(400).json({ error: error.message || 'Failed to delete project' });
   }
@@ -903,19 +922,11 @@ app.post('/api/admin/portal/tickets', async (req, res) => {
     });
 
     if (adminReply) {
-      await sendTicketMail({
-        to: result.ticket.clientEmail,
-        subject: `Update on your support ticket: ${result.ticket.subject}`,
-        text: `Hi,\n\nOur team replied to your ticket:\n\n${adminReply}\n\nStatus: ${result.ticket.status}\n\n— Versecure Tech`,
-        html: `<div style="font-family:sans-serif;line-height:1.5"><h2>Ticket update</h2><p>Our team replied to <strong>${result.ticket.subject}</strong>.</p><p style="white-space:pre-wrap">${adminReply.replace(/</g,'&lt;')}</p><p>Status: ${result.ticket.status}</p><p style="color:#666">— Versecure Tech</p></div>`
-      });
+      const mail = ticketAdminReplyClientEmail({ ticket: result.ticket, adminReply });
+      await sendTicketMail({ to: result.ticket.clientEmail, ...mail });
     } else if (status) {
-      await sendTicketMail({
-        to: result.ticket.clientEmail,
-        subject: `Ticket status updated: ${result.ticket.subject}`,
-        text: `Your ticket status is now: ${result.ticket.status}`,
-        html: `<div style="font-family:sans-serif"><p>Your ticket <strong>${result.ticket.subject}</strong> is now <strong>${result.ticket.status}</strong>.</p></div>`
-      });
+      const mail = ticketStatusClientEmail({ ticket: result.ticket });
+      await sendTicketMail({ to: result.ticket.clientEmail, ...mail });
     }
 
     emitPortalUpdate({ type: 'ticket_updated', ticketId: id, clientEmail: result.ticket.clientEmail });

@@ -156,7 +156,14 @@ export class PortalService {
       body: JSON.stringify({ email, ...input })
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || 'Failed to create ticket');
+    if (!response.ok) {
+      if (response.status === 403) {
+        this.canUseTickets.set(false);
+        await this.refresh();
+      }
+      throw new Error(data.error || 'Failed to create ticket');
+    }
+    if (typeof data.canUseTickets === 'boolean') this.canUseTickets.set(data.canUseTickets);
     if (Array.isArray(data.tickets)) this.tickets.set(data.tickets);
     else await this.refresh();
     return data.ticket as PortalTicket;
@@ -170,7 +177,13 @@ export class PortalService {
       body: JSON.stringify({ email, body })
     });
     const data = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(data.error || 'Failed to send reply');
+    if (!response.ok) {
+      if (response.status === 403) {
+        this.canUseTickets.set(false);
+        await this.refresh();
+      }
+      throw new Error(data.error || 'Failed to send reply');
+    }
     if (Array.isArray(data.tickets)) this.tickets.set(data.tickets);
     else await this.refresh();
     return data.ticket as PortalTicket;

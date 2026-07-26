@@ -280,21 +280,49 @@ export function createPortalStore() {
 
   async function deleteProject(id) {
     if (!id) throw new Error('Project id required');
+    let clientEmail = '';
+    let found = false;
+
+    // Resolve client email from either backend before deleting
+    if (sb) {
+      try {
+        const { data } = await sb.from('portal_projects').select('*').eq('id', id).maybeSingle();
+        if (data) {
+          clientEmail = normalizeEmail(data.client_email);
+          found = true;
+        }
+      } catch {}
+    }
+    const jsonStore = readJsonStore();
+    const jsonHit = jsonStore.projects.find((p) => p.id === id);
+    if (jsonHit) {
+      clientEmail = clientEmail || normalizeEmail(jsonHit.clientEmail);
+      found = true;
+    }
+    if (!found) throw new Error('Project not found');
+
     if (sb) {
       try {
         const { error } = await sb.from('portal_projects').delete().eq('id', id);
         if (error) throw error;
-        return { projects: await listProjects() };
       } catch (error) {
-        console.warn('Supabase deleteProject fallback:', error.message);
+        console.warn('Supabase deleteProject warning:', error.message);
       }
     }
-    const store = readJsonStore();
-    const before = store.projects.length;
-    store.projects = store.projects.filter((p) => p.id !== id);
-    if (store.projects.length === before) throw new Error('Project not found');
-    writeJsonStore(store);
-    return { projects: [...store.projects].sort(sortByUpdatedDesc) };
+
+    // Always clear local JSON too (avoids ghost projects unlocking tickets)
+    jsonStore.projects = jsonStore.projects.filter((p) => p.id !== id);
+    writeJsonStore(jsonStore);
+
+    const remaining = clientEmail
+      ? (await listProjects(clientEmail)).length
+      : 0;
+    return {
+      projects: await listProjects(),
+      clientEmail,
+      remainingForClient: remaining,
+      ticketsLocked: remaining === 0
+    };
   }
 
   async function listTickets(clientEmail) {
