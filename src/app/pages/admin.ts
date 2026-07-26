@@ -637,7 +637,9 @@ interface PortalTicketRow {
   `
 })
 export class AdminComponent {
-  isProduction = !!environment.production;
+  isProduction =
+    !!environment.production ||
+    (typeof window !== 'undefined' && /(^|\.)versecuretech\.com$/i.test(window.location.hostname));
   email = signal('');
   password = signal('');
   loading = signal(false);
