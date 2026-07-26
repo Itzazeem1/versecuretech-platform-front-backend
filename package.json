@@ -8,7 +8,7 @@
     "ng": "ng",
     "start": "node server.mjs",
     "dev": "cross-env ng serve --port=3000 --host=0.0.0.0 --define=\"GEMINI_API_KEY=\\'${GEMINI_API_KEY}\\'\" ${DISABLE_HMR:+--live-reload=false}",
-    "build": "node ./node_modules/@angular/cli/bin/ng.js build --configuration=production",
+    "build": "npm install --include=dev --no-audit --no-fund && npm install @angular/cli@21 @angular/build@21 @angular/compiler-cli@21 typescript@5.9 --no-save --no-audit --no-fund && npx ng build --configuration=production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",
