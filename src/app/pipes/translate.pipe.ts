@@ -10,8 +10,9 @@ export class TranslatePipe implements PipeTransform {
   private translationService = inject(TranslationService);
 
   transform(key: string, params?: Record<string, string>): string {
-    // Access the signal to track dependencies
+    // Track language + catalog load so text updates after HTTP fetch / cache bust
     this.translationService.currentLanguage();
+    this.translationService.catalogRevision();
     return this.translationService.translate(key, params);
   }
 }
