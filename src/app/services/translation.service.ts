@@ -6,14 +6,19 @@ export interface TranslationData {
   [key: string]: string | TranslationData;
 }
 
+/** Bump when i18n JSON keys change so browsers/CDNs don't keep stale files. */
+const I18N_CACHE_VERSION = '20260726b';
+
 @Injectable({
   providedIn: 'root'
 })
 export class TranslationService {
   private http = inject(HttpClient);
   private appRef = inject(ApplicationRef);
-  
+
   private translations = signal<TranslationData>({});
+  /** Increments on every successful load — translate pipe depends on this. */
+  private catalogVersion = signal(0);
   private currentLang = signal('en');
   private readonly SUPPORTED_LANGUAGES = ['en', 'es', 'fr', 'de', 'ar', 'it'];
 
@@ -44,15 +49,15 @@ export class TranslationService {
 
     try {
       const data = await firstValueFrom(
-        this.http.get<TranslationData>(`/assets/i18n/${lang}.json`)
+        this.http.get<TranslationData>(`/assets/i18n/${lang}.json?v=${I18N_CACHE_VERSION}`)
       );
       this.translations.set(data);
+      this.catalogVersion.update((n) => n + 1);
       this.currentLang.set(lang);
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem('preferredLanguage', lang);
       }
 
-      // Handle RTL for Arabic
       if (typeof document !== 'undefined') {
         if (lang === 'ar') {
           document.documentElement.dir = 'rtl';
@@ -63,17 +68,15 @@ export class TranslationService {
         }
       }
 
-      // Force Angular to run change detection across all components
       setTimeout(() => {
         try {
           this.appRef.tick();
-        } catch (e) {
+        } catch {
           // ignore if tick already in progress
         }
       }, 0);
     } catch (error) {
       console.error(`Failed to load translations for ${lang}:`, error);
-      // Fallback to English if loading fails
       if (lang !== 'en') {
         this.loadLanguage('en');
       }
@@ -81,6 +84,9 @@ export class TranslationService {
   }
 
   translate(key: string, params?: Record<string, string>): string {
+    this.catalogVersion();
+    this.currentLang();
+
     const keys = key.split('.');
     let value: any = this.translations();
 
@@ -88,7 +94,7 @@ export class TranslationService {
       if (value && typeof value === 'object' && k in value) {
         value = value[k];
       } else {
-        return key; // Return key if translation not found
+        return key;
       }
     }
 
@@ -96,7 +102,6 @@ export class TranslationService {
       return key;
     }
 
-    // Replace parameters if provided
     if (params) {
       return Object.entries(params).reduce(
         (str, [param, replacement]) => str.replace(new RegExp(`{{${param}}}`, 'g'), replacement),
@@ -107,8 +112,8 @@ export class TranslationService {
     return value;
   }
 
-  // Expose a computed signal that changes when language changes
   readonly currentLanguage = computed(() => this.currentLang());
+  readonly catalogRevision = computed(() => this.catalogVersion());
 
   getCurrentLanguage(): string {
     return this.currentLang();
