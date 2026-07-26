@@ -11,6 +11,7 @@ import { FooterComponent } from '../components/footer';
 import { ThreeBackgroundComponent } from '../components/three-bg';
 import { OauthButtonsComponent } from '../components/oauth-buttons';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { environment } from '../../environments/environment';
 import gsap from 'gsap';
 
 interface ForgeSeat {
@@ -22,6 +23,28 @@ interface ForgeSeat {
   label: string;
   revocable: boolean;
   isAdmin?: boolean;
+}
+
+interface PortalProjectRow {
+  id: string;
+  clientEmail: string;
+  title: string;
+  status: string;
+  progress: number;
+  notes?: string;
+}
+
+interface PortalTicketRow {
+  id: string;
+  clientEmail: string;
+  subject: string;
+  message: string;
+  priority: string;
+  status: string;
+  adminReply?: string;
+  messages?: Array<{ id: string; authorEmail: string; authorRole: string; body: string; createdAt?: string }>;
+  attachments?: Array<{ id: string; fileName: string; url: string }>;
+  updatedAt?: string;
 }
 
 @Component({
@@ -40,6 +63,16 @@ interface ForgeSeat {
           TEMP ADMIN BYPASS ON — tell the agent “restore security” when you’re done
         </div>
       }
+
+      <div class="w-full max-w-7xl mb-6 px-4 py-3 rounded-xl border text-xs font-mono uppercase tracking-widest text-center"
+           [class.border-amber-400/40]="!isProduction"
+           [class.bg-amber-400/10]="!isProduction"
+           [class.text-amber-200]="!isProduction"
+           [class.border-green-400/30]="isProduction"
+           [class.bg-green-400/10]="isProduction"
+           [class.text-green-300]="isProduction">
+        {{ isProduction ? 'LIVE SITE ADMIN — changes affect www users' : 'LOCAL ADMIN — changes stay on this machine only' }}
+      </div>
       
       @if (!supabase.isAdmin()) {
         <div class="w-full max-w-md glass-panel p-10 rounded-[2rem] border border-[var(--text-primary)]/10 relative overflow-hidden glow-hover">
@@ -272,6 +305,131 @@ interface ForgeSeat {
                   </button>
                 </div>
               </div>
+
+              <!-- Client Projects -->
+              <div class="glass-panel p-8 md:p-10 rounded-[2rem] border border-[var(--text-primary)]/10">
+                <div class="flex items-center gap-3 mb-6">
+                  <span class="material-icons text-[var(--accent-main)]">rocket_launch</span>
+                  <div>
+                    <h3 class="font-medium text-xl">Client Projects</h3>
+                    <p class="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-mono">Assign a project to unlock portal tickets for that client</p>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                  <input type="email" [ngModel]="projectFormEmail()" (ngModelChange)="projectFormEmail.set($event)" placeholder="client@email.com" class="w-full bg-transparent border border-[var(--text-primary)]/20 rounded-2xl px-5 py-3 text-sm focus:border-[var(--accent-main)] outline-none" />
+                  <input type="text" [ngModel]="projectFormTitle()" (ngModelChange)="projectFormTitle.set($event)" placeholder="Project title" class="w-full bg-transparent border border-[var(--text-primary)]/20 rounded-2xl px-5 py-3 text-sm focus:border-[var(--accent-main)] outline-none" />
+                  <select [ngModel]="projectFormStatus()" (ngModelChange)="projectFormStatus.set($event)" class="w-full bg-[#0a0a0a] border border-[var(--text-primary)]/20 rounded-2xl px-5 py-3 text-xs uppercase tracking-widest outline-none">
+                    <option value="queued">Queued</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="review">Review</option>
+                    <option value="done">Done</option>
+                  </select>
+                  <input type="number" min="0" max="100" [ngModel]="projectFormProgress()" (ngModelChange)="projectFormProgress.set(+$event || 0)" placeholder="Progress %" class="w-full bg-transparent border border-[var(--text-primary)]/20 rounded-2xl px-5 py-3 text-sm focus:border-[var(--accent-main)] outline-none" />
+                  <textarea rows="3" [ngModel]="projectFormNotes()" (ngModelChange)="projectFormNotes.set($event)" placeholder="Notes visible to client" class="md:col-span-2 w-full bg-transparent border border-[var(--text-primary)]/20 rounded-2xl px-5 py-3 text-sm focus:border-[var(--accent-main)] outline-none resize-y"></textarea>
+                </div>
+                <div class="flex flex-wrap gap-3 mb-8">
+                  <button (click)="savePortalProject()" [disabled]="portalSaving()" class="px-6 py-3 rounded-2xl bg-[var(--text-primary)] text-[var(--bg-main)] text-xs font-bold uppercase tracking-widest disabled:opacity-40">
+                    {{ projectFormId() ? 'Update Project' : 'Create Project' }}
+                  </button>
+                  @if (projectFormId()) {
+                    <button (click)="resetProjectForm()" class="px-6 py-3 rounded-2xl border border-[var(--text-primary)]/20 text-xs uppercase tracking-widest">Cancel Edit</button>
+                  }
+                </div>
+                @if (portalProjectsMsg()) {
+                  <p class="text-xs text-cyan-200 mb-4">{{ portalProjectsMsg() }}</p>
+                }
+                <div class="space-y-3 max-h-80 overflow-y-auto custom-scrollbar">
+                  @for (project of portalProjects(); track project.id) {
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3.5">
+                      <div class="min-w-0">
+                        <div class="text-sm truncate">{{ project.title }}</div>
+                        <div class="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-mono">{{ project.clientEmail }} · {{ project.status }} · {{ project.progress }}%</div>
+                      </div>
+                      <div class="flex gap-3 shrink-0">
+                        <button (click)="editPortalProject(project)" class="text-[10px] uppercase tracking-widest text-cyan-300">Edit</button>
+                        <button (click)="deletePortalProject(project.id)" class="text-[10px] uppercase tracking-widest text-red-300">Delete</button>
+                      </div>
+                    </div>
+                  } @empty {
+                    <p class="text-xs text-[var(--text-muted)] text-center py-6">No client projects yet.</p>
+                  }
+                </div>
+              </div>
+
+              <!-- Support Tickets -->
+              <div class="glass-panel p-8 md:p-10 rounded-[2rem] border border-[var(--text-primary)]/10">
+                <div class="flex items-center gap-3 mb-6">
+                  <span class="material-icons text-[var(--accent-main)]">support_agent</span>
+                  <div>
+                    <h3 class="font-medium text-xl">Priority Support</h3>
+                    <p class="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-mono">Thread replies · filters · attachments</p>
+                  </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                  <input type="search" [ngModel]="ticketSearch()" (ngModelChange)="ticketSearch.set($event); loadPortalAdminData()" placeholder="Search email or subject" class="w-full bg-transparent border border-[var(--text-primary)]/20 rounded-2xl px-5 py-3 text-sm outline-none focus:border-[var(--accent-main)]" />
+                  <select [ngModel]="ticketFilter()" (ngModelChange)="ticketFilter.set($event); loadPortalAdminData()" class="w-full bg-[#0a0a0a] border border-[var(--text-primary)]/20 rounded-2xl px-5 py-3 text-xs uppercase tracking-widest outline-none">
+                    <option value="">All statuses</option>
+                    <option value="open">Open</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="resolved">Resolved</option>
+                    <option value="closed">Closed</option>
+                  </select>
+                </div>
+
+                @if (portalTicketsMsg()) {
+                  <p class="text-xs text-cyan-200 mb-4">{{ portalTicketsMsg() }}</p>
+                }
+                <div class="space-y-4 max-h-[36rem] overflow-y-auto custom-scrollbar">
+                  @for (ticket of portalTickets(); track ticket.id) {
+                    <div class="rounded-2xl border border-white/10 bg-white/[0.03] p-5 space-y-3">
+                      <div class="flex flex-wrap justify-between gap-2">
+                        <div>
+                          <div class="text-sm font-medium">{{ ticket.subject }}</div>
+                          <div class="text-[10px] uppercase tracking-widest font-mono text-[var(--text-muted)]">{{ ticket.clientEmail }} · {{ ticket.priority }} · {{ ticket.updatedAt ? (ticket.updatedAt | date:'short') : '' }}</div>
+                        </div>
+                        <select [ngModel]="ticket.status" (ngModelChange)="updateTicketStatus(ticket.id, $event)" class="bg-[#0a0a0a] border border-[var(--text-primary)]/20 rounded-xl px-3 py-2 text-[10px] uppercase tracking-widest outline-none">
+                          <option value="open">Open</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="resolved">Resolved</option>
+                          <option value="closed">Closed</option>
+                        </select>
+                      </div>
+
+                      <div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar">
+                        @for (msg of ticket.messages || []; track msg.id) {
+                          <div class="rounded-xl border px-3 py-2" [class.border-cyan-300/20]="msg.authorRole === 'admin'" [class.bg-cyan-300/5]="msg.authorRole === 'admin'" [class.border-white/10]="msg.authorRole !== 'admin'">
+                            <div class="text-[9px] uppercase tracking-widest font-mono text-[var(--text-muted)] mb-1">{{ msg.authorRole }} · {{ msg.authorEmail }}</div>
+                            <p class="text-sm whitespace-pre-wrap">{{ msg.body }}</p>
+                          </div>
+                        } @empty {
+                          <p class="text-sm text-[var(--text-muted)] whitespace-pre-wrap">{{ ticket.message }}</p>
+                        }
+                      </div>
+
+                      @if (ticket.attachments?.length) {
+                        <div class="flex flex-wrap gap-2">
+                          @for (file of ticket.attachments; track file.id) {
+                            <a [href]="file.url" target="_blank" rel="noopener" class="text-[10px] uppercase tracking-widest font-mono px-3 py-1 rounded-full border border-white/15 hover:border-cyan-300">{{ file.fileName }}</a>
+                          }
+                        </div>
+                      }
+
+                      <textarea rows="2" [ngModel]="ticketReplyDraft(ticket.id)" (ngModelChange)="setTicketReplyDraft(ticket.id, $event)" placeholder="Team reply (emails the client)" class="w-full bg-transparent border border-[var(--text-primary)]/20 rounded-xl px-4 py-3 text-sm outline-none resize-y"></textarea>
+                      <div class="flex flex-wrap gap-3">
+                        <button (click)="saveTicketReply(ticket.id)" class="px-4 py-2 rounded-xl border border-[var(--text-primary)]/20 text-[10px] uppercase tracking-widest hover:border-[var(--accent-main)]">Send Reply</button>
+                        <label class="px-4 py-2 rounded-xl border border-[var(--text-primary)]/20 text-[10px] uppercase tracking-widest cursor-pointer hover:border-cyan-300">
+                          Attach file
+                          <input type="file" class="hidden" (change)="uploadTicketAttachment(ticket.id, $event)" />
+                        </label>
+                      </div>
+                    </div>
+                  } @empty {
+                    <p class="text-xs text-[var(--text-muted)] text-center py-6">No support tickets yet.</p>
+                  }
+                </div>
+              </div>
             </div>
 
             <!-- Right Panel: Visual Control & Settings -->
@@ -457,11 +615,29 @@ interface ForgeSeat {
         </div>
       }
     </div>
+
+    @if (confirmOpen()) {
+      <div class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm" (click)="closeConfirm()">
+        <div class="glass-panel w-full max-w-md rounded-[2rem] border border-[var(--text-primary)]/15 p-8 relative" (click)="$event.stopPropagation()">
+          <h3 class="text-xl font-display font-medium mb-3">{{ confirmTitle() }}</h3>
+          <p class="text-sm text-[var(--text-muted)] leading-relaxed mb-8 whitespace-pre-line">{{ confirmBody() }}</p>
+          <div class="flex flex-wrap gap-3 justify-end">
+            <button type="button" (click)="closeConfirm()" class="px-5 py-3 rounded-xl border border-[var(--text-primary)]/20 text-xs uppercase tracking-widest font-mono hover:border-[var(--text-primary)]/40">
+              Cancel
+            </button>
+            <button type="button" (click)="acceptConfirm()" class="px-5 py-3 rounded-xl bg-[var(--text-primary)] text-[var(--bg-main)] text-xs font-bold uppercase tracking-widest">
+              Confirm
+            </button>
+          </div>
+        </div>
+      </div>
+    }
     
     <app-footer></app-footer>
   `
 })
 export class AdminComponent {
+  isProduction = !!environment.production;
   email = signal('');
   password = signal('');
   loading = signal(false);
@@ -479,6 +655,26 @@ export class AdminComponent {
   forgeAccessSeats = signal<ForgeSeat[]>([]);
   forgeAccessMsg = signal('');
   forgeAccessLoading = signal(false);
+
+  portalProjects = signal<PortalProjectRow[]>([]);
+  portalTickets = signal<PortalTicketRow[]>([]);
+  portalSaving = signal(false);
+  portalProjectsMsg = signal('');
+  portalTicketsMsg = signal('');
+  projectFormId = signal('');
+  projectFormEmail = signal('');
+  projectFormTitle = signal('');
+  projectFormStatus = signal('queued');
+  projectFormProgress = signal(0);
+  projectFormNotes = signal('');
+  ticketReplyDrafts = signal<Record<string, string>>({});
+  ticketFilter = signal('');
+  ticketSearch = signal('');
+  confirmOpen = signal(false);
+  confirmTitle = signal('');
+  confirmBody = signal('');
+  confirmKind = signal<'create-project' | 'delete-project' | null>(null);
+  pendingDeleteId = signal('');
 
   selectedSection = signal('home');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -505,6 +701,7 @@ export class AdminComponent {
       if (this.supabase.isAdmin()) {
         this.loadSection(this.selectedSection());
         this.loadForgeAccessList();
+        this.loadPortalAdminData();
         this.animateDashboard();
       }
 
@@ -519,6 +716,7 @@ export class AdminComponent {
       if (this.supabase.isAdmin()) {
         this.loadSection(this.selectedSection());
         this.loadForgeAccessList();
+        this.loadPortalAdminData();
       }
     });
   }
@@ -553,6 +751,14 @@ export class AdminComponent {
     return this.supabase.currentUser()?.email
       || this.email()
       || (this.supabase.tempAdminBypassEnabled ? this.supabase.tempAdminEmail : '');
+  }
+
+  private async authHeaders(json = true): Promise<Record<string, string>> {
+    const token = await this.supabase.getAccessToken();
+    const headers: Record<string, string> = { Accept: 'application/json' };
+    if (json) headers['Content-Type'] = 'application/json';
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    return headers;
   }
 
   async sendPasswordReset() {
@@ -601,7 +807,9 @@ export class AdminComponent {
         this.forgeAccessMsg.set('Admin email missing — re-login to admin.');
         return;
       }
-      const response = await fetch(`/api/admin/forge-access?adminEmail=${encodeURIComponent(admin)}`);
+      const response = await fetch(`/api/admin/forge-access?adminEmail=${encodeURIComponent(admin)}`, {
+        headers: await this.authHeaders()
+      });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(data.error || `Could not load seats (${response.status}). Is the backend running?`);
@@ -626,6 +834,253 @@ export class AdminComponent {
       this.forgeAccessMsg.set(error.message || 'Failed to load Forge seats — start backend with npm start');
     } finally {
       this.forgeAccessLoading.set(false);
+    }
+  }
+
+  async loadPortalAdminData() {
+    if (!this.supabase.isAdmin()) return;
+    const admin = this.adminEmail();
+    if (!admin) return;
+    try {
+      const params = new URLSearchParams({ adminEmail: admin });
+      if (this.ticketFilter()) params.set('status', this.ticketFilter());
+      if (this.ticketSearch().trim()) params.set('q', this.ticketSearch().trim());
+      const headers = await this.authHeaders();
+      const [projectsRes, ticketsRes] = await Promise.all([
+        fetch(`/api/admin/portal/projects?adminEmail=${encodeURIComponent(admin)}`, { headers }),
+        fetch(`/api/admin/portal/tickets?${params.toString()}`, { headers })
+      ]);
+      if (projectsRes.ok) {
+        const data = await projectsRes.json();
+        this.portalProjects.set(Array.isArray(data.projects) ? data.projects : []);
+      }
+      if (ticketsRes.ok) {
+        const data = await ticketsRes.json();
+        const tickets = Array.isArray(data.tickets) ? data.tickets : [];
+        this.portalTickets.set(tickets);
+        const drafts: Record<string, string> = { ...this.ticketReplyDrafts() };
+        for (const ticket of tickets) {
+          if (drafts[ticket.id] == null) drafts[ticket.id] = '';
+        }
+        this.ticketReplyDrafts.set(drafts);
+      }
+    } catch (error) {
+      console.warn('Portal admin data load failed', error);
+    }
+  }
+
+  resetProjectForm() {
+    this.projectFormId.set('');
+    this.projectFormEmail.set('');
+    this.projectFormTitle.set('');
+    this.projectFormStatus.set('queued');
+    this.projectFormProgress.set(0);
+    this.projectFormNotes.set('');
+  }
+
+  editPortalProject(project: PortalProjectRow) {
+    this.projectFormId.set(project.id);
+    this.projectFormEmail.set(project.clientEmail);
+    this.projectFormTitle.set(project.title);
+    this.projectFormStatus.set(project.status || 'queued');
+    this.projectFormProgress.set(project.progress || 0);
+    this.projectFormNotes.set(project.notes || '');
+  }
+
+  async savePortalProject() {
+    const admin = this.adminEmail();
+    if (!admin) {
+      this.portalProjectsMsg.set('Admin email missing — re-login.');
+      return;
+    }
+    if (!this.projectFormId()) {
+      this.openConfirm(
+        'Create client project?',
+        `Create project for ${this.projectFormEmail().trim()}?\n\nThis unlocks their portal tickets and emails them.`,
+        'create-project'
+      );
+      return;
+    }
+    await this.executeSavePortalProject();
+  }
+
+  private openConfirm(title: string, body: string, kind: 'create-project' | 'delete-project') {
+    this.confirmTitle.set(title);
+    this.confirmBody.set(body);
+    this.confirmKind.set(kind);
+    this.confirmOpen.set(true);
+  }
+
+  closeConfirm() {
+    this.confirmOpen.set(false);
+    this.confirmKind.set(null);
+    this.pendingDeleteId.set('');
+  }
+
+  async acceptConfirm() {
+    const kind = this.confirmKind();
+    this.confirmOpen.set(false);
+    if (kind === 'create-project') {
+      this.confirmKind.set(null);
+      await this.executeSavePortalProject();
+      return;
+    }
+    if (kind === 'delete-project') {
+      const id = this.pendingDeleteId();
+      this.confirmKind.set(null);
+      this.pendingDeleteId.set('');
+      await this.executeDeletePortalProject(id);
+    }
+  }
+
+  private async executeSavePortalProject() {
+    const admin = this.adminEmail();
+    if (!admin) {
+      this.portalProjectsMsg.set('Admin email missing — re-login.');
+      return;
+    }
+    this.portalSaving.set(true);
+    this.portalProjectsMsg.set('');
+    try {
+      const response = await fetch('/api/admin/portal/projects', {
+        method: 'POST',
+        headers: await this.authHeaders(),
+        body: JSON.stringify({
+          adminEmail: admin,
+          id: this.projectFormId() || undefined,
+          clientEmail: this.projectFormEmail().trim(),
+          title: this.projectFormTitle().trim(),
+          status: this.projectFormStatus(),
+          progress: this.projectFormProgress(),
+          notes: this.projectFormNotes()
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Failed to save project');
+      this.portalProjects.set(Array.isArray(data.projects) ? data.projects : []);
+      this.portalProjectsMsg.set(this.projectFormId() ? 'Project updated.' : 'Project created.');
+      this.resetProjectForm();
+    } catch (error: any) {
+      this.portalProjectsMsg.set(error.message || 'Failed to save project');
+    } finally {
+      this.portalSaving.set(false);
+      setTimeout(() => this.portalProjectsMsg.set(''), 4000);
+    }
+  }
+
+  async deletePortalProject(id: string) {
+    const admin = this.adminEmail();
+    if (!admin || !id) return;
+    this.pendingDeleteId.set(id);
+    this.openConfirm(
+      'Delete project?',
+      'Delete this client project? If it is their only project, support tickets lock immediately.',
+      'delete-project'
+    );
+  }
+
+  private async executeDeletePortalProject(id: string) {
+    const admin = this.adminEmail();
+    if (!admin || !id) return;
+    try {
+      const response = await fetch('/api/admin/portal/projects/delete', {
+        method: 'POST',
+        headers: await this.authHeaders(),
+        body: JSON.stringify({ adminEmail: admin, id })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Failed to delete');
+      this.portalProjects.set(Array.isArray(data.projects) ? data.projects : []);
+      if (this.projectFormId() === id) this.resetProjectForm();
+      this.portalProjectsMsg.set(
+        data.ticketsLocked
+          ? 'Project deleted — client support tickets are now locked.'
+          : 'Project deleted.'
+      );
+    } catch (error: any) {
+      this.portalProjectsMsg.set(error.message || 'Failed to delete project');
+    } finally {
+      setTimeout(() => this.portalProjectsMsg.set(''), 4000);
+    }
+  }
+
+  ticketReplyDraft(id: string): string {
+    return this.ticketReplyDrafts()[id] || '';
+  }
+
+  setTicketReplyDraft(id: string, value: string) {
+    this.ticketReplyDrafts.set({ ...this.ticketReplyDrafts(), [id]: value });
+  }
+
+  async updateTicketStatus(id: string, status: string) {
+    await this.patchTicket(id, { status });
+  }
+
+  async saveTicketReply(id: string) {
+    await this.patchTicket(id, {
+      adminReply: this.ticketReplyDraft(id),
+      status: this.portalTickets().find((t) => t.id === id)?.status
+    });
+    this.setTicketReplyDraft(id, '');
+  }
+
+  async uploadTicketAttachment(id: string, event: Event) {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    const admin = this.adminEmail();
+    if (!file || !admin || !id) return;
+    this.portalTicketsMsg.set('');
+    try {
+      const form = new FormData();
+      form.append('adminEmail', admin);
+      form.append('file', file);
+      const headers = await this.authHeaders(false);
+      delete (headers as any)['Content-Type'];
+      const response = await fetch(`/api/admin/portal/tickets/${id}/attachments`, {
+        method: 'POST',
+        headers,
+        body: form
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Upload failed');
+      if (Array.isArray(data.tickets)) this.portalTickets.set(data.tickets);
+      else await this.loadPortalAdminData();
+      this.portalTicketsMsg.set('Attachment uploaded.');
+    } catch (error: any) {
+      this.portalTicketsMsg.set(error.message || 'Upload failed');
+    } finally {
+      input.value = '';
+      setTimeout(() => this.portalTicketsMsg.set(''), 4000);
+    }
+  }
+
+  private async patchTicket(id: string, patch: { status?: string; adminReply?: string }) {
+    const admin = this.adminEmail();
+    if (!admin || !id) return;
+    this.portalTicketsMsg.set('');
+    try {
+      const response = await fetch('/api/admin/portal/tickets', {
+        method: 'POST',
+        headers: await this.authHeaders(),
+        body: JSON.stringify({
+          adminEmail: admin,
+          id,
+          status: patch.status,
+          adminReply: patch.adminReply
+        })
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || 'Failed to update ticket');
+      const tickets = Array.isArray(data.tickets) ? data.tickets : [];
+      this.portalTickets.set(tickets);
+      if (data.ticket) {
+        this.setTicketReplyDraft(data.ticket.id, data.ticket.adminReply || '');
+      }
+      this.portalTicketsMsg.set('Ticket updated.');
+    } catch (error: any) {
+      this.portalTicketsMsg.set(error.message || 'Failed to update ticket');
+    } finally {
+      setTimeout(() => this.portalTicketsMsg.set(''), 4000);
     }
   }
 
@@ -672,7 +1127,7 @@ export class AdminComponent {
     try {
       const response = await fetch('/api/admin/forge-access/grant', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await this.authHeaders(),
         body: JSON.stringify({
           adminEmail: admin,
           email,
@@ -717,7 +1172,7 @@ export class AdminComponent {
     try {
       const response = await fetch('/api/admin/forge-access/revoke', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: await this.authHeaders(),
         body: JSON.stringify({ adminEmail: this.adminEmail(), email })
       });
       const data = await response.json();

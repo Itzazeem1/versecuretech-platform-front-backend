@@ -2,11 +2,34 @@ import 'dotenv/config';
 import express from 'express';
 import nodemailer from 'nodemailer';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname, join, extname } from 'path';
 import { existsSync, readFileSync, writeFileSync } from 'fs';
+import { randomUUID } from 'crypto';
 import cors from 'cors';
+import multer from 'multer';
+import { createServer } from 'http';
+import { Server as SocketServer } from 'socket.io';
 import { GoogleGenAI } from "@google/genai";
 import { normalizeConversationHistory, buildChatMessages, buildForgeContextPayload } from './forge-ai-utils.mjs';
+import {
+  createPortalStore,
+  isValidEmail,
+  normalizeEmail,
+  PROJECT_STATUSES,
+  TICKET_STATUSES,
+  TICKET_PRIORITIES,
+  uploadFileToStorage
+} from './portal-store.mjs';
+import { resolveRequestUser, requireMatchingUser, supabaseAuthConfigured, strictAuthRequired } from './auth-helpers.mjs';
+import {
+  projectCreatedEmail,
+  projectUpdatedEmail,
+  ticketCreatedTeamEmail,
+  ticketClientReplyTeamEmail,
+  ticketAdminReplyClientEmail,
+  ticketStatusClientEmail,
+  ticketsLockedEmail
+} from './portal-email.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -20,6 +43,18 @@ const accessStorePath = join(__dirname, 'forge-access.json');
 /** Pack sizes from Pricing page */
 const FORGE_BUNDLE_CREDITS = 100;
 const ENTERPRISE_CREDITS = 500;
+const portalStore = createPortalStore();
+console.log('Portal data backend:', portalStore.backend);
+console.log(
+  'Portal auth mode:',
+  supabaseAuthConfigured()
+    ? strictAuthRequired()
+      ? 'supabase-jwt (strict)'
+      : 'supabase-jwt (available)'
+    : strictAuthRequired()
+      ? 'MISSING KEYS (strict required)'
+      : 'relaxed-email (set SUPABASE_URL + key for strict auth)'
+);
 
 function defaultCreditsForPlan(plan = 'forge_bundle') {
   return plan === 'enterprise' ? ENTERPRISE_CREDITS : FORGE_BUNDLE_CREDITS;
@@ -152,6 +187,15 @@ function readForgeAccessStore() {
 }
 
 function writeForgeAccessStore(store) {
+  try {
+    if (existsSync(accessStorePath)) {
+      const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+      writeFileSync(join(__dirname, `forge-access.backup.${stamp}.json`), readFileSync(accessStorePath));
+    }
+  } catch (error) {
+    console.warn('Forge access backup failed:', error.message);
+  }
+
   const payload = JSON.stringify(
     {
       allowedEmails: store.allowedEmails || [],
@@ -427,17 +471,18 @@ app.post('/api/admin/upgrade-session', (req, res) => {
   return res.json({ credits: 999999, unlimited: true });
 });
 
-app.get('/api/admin/forge-access', (req, res) => {
-  const adminEmail = typeof req.query.adminEmail === 'string' ? req.query.adminEmail : '';
-  if (!isAdminEmail(adminEmail)) {
-    return res.status(403).json({ error: 'Admin access required' });
-  }
-  return res.json(getForgeAccessPayload(adminEmail, true));
+app.get('/api/admin/forge-access', async (req, res) => {
+  const auth = await resolveRequestUser(req, { emailHints: [req.query?.adminEmail] });
+  if (!auth.ok) return res.status(auth.status || 401).json({ error: auth.error });
+  if (!isAdminEmail(auth.email)) return res.status(403).json({ error: 'Admin access required' });
+  return res.json(getForgeAccessPayload(auth.email, true));
 });
 
-app.post('/api/admin/forge-access/grant', (req, res) => {
+app.post('/api/admin/forge-access/grant', async (req, res) => {
   try {
-  const adminEmail = `${req.body?.adminEmail || ''}`.toLowerCase();
+  const auth = await resolveRequestUser(req, { emailHints: [req.body?.adminEmail] });
+  if (!auth.ok) return res.status(auth.status || 401).json({ error: auth.error });
+  const adminEmail = auth.email;
   const targetEmail = `${req.body?.email || ''}`.toLowerCase().trim();
   const role = `${req.body?.role || 'client'}`.toLowerCase();
   let plan = `${req.body?.plan || 'forge_bundle'}`.toLowerCase();
@@ -524,8 +569,10 @@ app.post('/api/admin/forge-access/grant', (req, res) => {
   }
 });
 
-app.post('/api/admin/forge-access/revoke', (req, res) => {
-  const adminEmail = `${req.body?.adminEmail || ''}`.toLowerCase();
+app.post('/api/admin/forge-access/revoke', async (req, res) => {
+  const auth = await resolveRequestUser(req, { emailHints: [req.body?.adminEmail] });
+  if (!auth.ok) return res.status(auth.status || 401).json({ error: auth.error });
+  const adminEmail = auth.email;
   const targetEmail = `${req.body?.email || ''}`.toLowerCase().trim();
   if (!isAdminEmail(adminEmail)) {
     return res.status(403).json({ error: 'Admin access required' });
@@ -542,14 +589,373 @@ app.post('/api/admin/forge-access/revoke', (req, res) => {
   return res.json(getForgeAccessPayload(adminEmail, true));
 });
 
-app.get('/api/admin/panel-access', (req, res) => {
-  const email = typeof req.query.email === 'string' ? req.query.email.toLowerCase() : '';
-  if (!email) return res.status(400).json({ error: 'Email required' });
+app.get('/api/admin/panel-access', async (req, res) => {
+  const auth = await resolveRequestUser(req, { emailHints: [req.query?.email] });
+  if (!auth.ok) return res.status(auth.status || 401).json({ error: auth.error });
   return res.json({
-    email,
-    isAdmin: isAdminEmail(email),
-    isSystemAdmin: isSystemDeveloper(email)
+    email: auth.email,
+    isAdmin: isAdminEmail(auth.email),
+    isSystemAdmin: isSystemDeveloper(auth.email),
+    authMode: auth.strict ? 'jwt' : 'relaxed'
   });
+});
+
+
+app.get('/api/health', async (_req, res) => {
+  let supabaseOk = false;
+  let storageMode = 'local-disk';
+  try {
+    if (portalStore.backend && String(portalStore.backend).includes('supabase')) {
+      supabaseOk = true;
+      storageMode = 'supabase+local-fallback';
+    }
+  } catch {}
+  res.json({
+    ok: true,
+    time: new Date().toISOString(),
+    portalBackend: portalStore.backend,
+    authConfigured: supabaseAuthConfigured(),
+    authStrict: strictAuthRequired(),
+    supabaseOk,
+    storageMode,
+    smtpConfigured: !!smtpPass
+  });
+});
+
+// --- Client portal: projects + priority support tickets ---
+let portalIo = null;
+function emitPortalUpdate(payload = {}) {
+  if (portalIo) portalIo.emit('portal:update', payload);
+}
+
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => cb(null, portalStore.uploadsDir),
+    filename: (_req, file, cb) => {
+      const safe = String(file.originalname || 'file').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
+      cb(null, `${Date.now()}-${randomUUID().slice(0, 8)}-${safe}`);
+    }
+  }),
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const ok = /^(image\/|application\/pdf|text\/plain|application\/zip)/.test(file.mimetype || '');
+    cb(ok ? null : new Error('Only images, PDF, text, or zip allowed'), ok);
+  }
+});
+
+async function sendTicketMail({ to, subject, text, html, replyTo }) {
+  if (!smtpPass || !to) return;
+  try {
+    await transporter.sendMail({ from: contactFrom, to, subject, text, html, replyTo });
+  } catch (error) {
+    console.warn('Portal mail failed:', error.message);
+  }
+}
+
+async function resolveUploadUrl(file) {
+  const localUrl = `/uploads/portal/${file.filename}`;
+  try {
+    const cloudUrl = await uploadFileToStorage(file.path, {
+      fileName: file.originalname,
+      mimeType: file.mimetype
+    });
+    return cloudUrl || localUrl;
+  } catch {
+    return localUrl;
+  }
+}
+
+app.get('/api/portal/meta', (_req, res) => {
+  res.json({ backend: portalStore.backend, statuses: [...PROJECT_STATUSES], ticketStatuses: [...TICKET_STATUSES] });
+});
+
+
+async function clientHasActiveService(email) {
+  const normalized = normalizeEmail(email);
+  if (!isValidEmail(normalized)) return false;
+  // Tickets follow projects only — admins are not auto-unlocked without a project
+  const projects = await portalStore.listProjects(normalized);
+  return projects.length > 0;
+}
+
+async function requirePortalClient(req) {
+  const requested = normalizeEmail(req.body?.email || req.query?.email);
+  const auth = await requireMatchingUser(req, requested);
+  if (!auth.ok) return auth;
+  return { ...auth, email: auth.email };
+}
+
+async function requirePortalAdmin(req) {
+  const requested = normalizeEmail(req.body?.adminEmail || req.query?.adminEmail);
+  const auth = await resolveRequestUser(req, { emailHints: [requested] });
+  if (!auth.ok) return auth;
+  if (!isAdminEmail(auth.email)) {
+    return { ok: false, status: 403, error: 'Admin access required' };
+  }
+  if (requested && requested !== auth.email) {
+    return { ok: false, status: 403, error: 'Admin session does not match adminEmail' };
+  }
+  return auth;
+}
+
+app.get('/api/portal/projects', async (req, res) => {
+  try {
+    const auth = await requirePortalClient(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ error: auth.error });
+    const projects = await portalStore.listProjects(auth.email);
+    const canUseTickets = projects.length > 0;
+    return res.json({ projects, canUseTickets, authMode: auth.strict ? 'jwt' : 'relaxed' });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Failed to load projects' });
+  }
+});
+
+app.get('/api/portal/tickets', async (req, res) => {
+  try {
+    const auth = await requirePortalClient(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ error: auth.error });
+    const canUseTickets = await clientHasActiveService(auth.email);
+    const tickets = canUseTickets ? await portalStore.listTickets(auth.email) : [];
+    return res.json({ tickets, canUseTickets, authMode: auth.strict ? 'jwt' : 'relaxed' });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Failed to load tickets' });
+  }
+});
+
+app.post('/api/portal/tickets', async (req, res) => {
+  try {
+    const auth = await requirePortalClient(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ error: auth.error });
+    const email = auth.email;
+    if (!(await clientHasActiveService(email))) {
+      return res.status(403).json({
+        error: 'Support tickets unlock after we assign you a service project. Use Contact for first inquiries.'
+      });
+    }
+    const subject = String(req.body?.subject || '').trim();
+    const message = String(req.body?.message || '').trim();
+    const priority = String(req.body?.priority || 'normal').toLowerCase();
+    const result = await portalStore.createTicket({ email, subject, message, priority });
+    const ticket = result.ticket;
+
+    const createdMail = ticketCreatedTeamEmail({ email, ticket, message });
+    await sendTicketMail({
+      to: contactNotifyTo,
+      replyTo: email,
+      subject: createdMail.subject,
+      text: createdMail.text,
+      html: createdMail.html
+    });
+
+    emitPortalUpdate({ type: 'ticket_created', ticketId: ticket.id, clientEmail: email });
+    return res.json({ success: true, ticket, tickets: result.tickets, canUseTickets: true });
+  } catch (error) {
+    console.error('Create ticket failed:', error);
+    return res.status(400).json({ error: error.message || 'Failed to create ticket' });
+  }
+});
+
+app.post('/api/portal/tickets/:id/messages', async (req, res) => {
+  try {
+    const auth = await requirePortalClient(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ error: auth.error });
+    const email = auth.email;
+    const body = String(req.body?.body || '').trim();
+    if (!body) return res.status(400).json({ error: 'Message required' });
+    if (!(await clientHasActiveService(email))) {
+      return res.status(403).json({ error: 'Support messaging is only available for active service clients.' });
+    }
+    const result = await portalStore.addTicketMessage({
+      ticketId: req.params.id,
+      authorEmail: email,
+      authorRole: 'client',
+      body
+    });
+    if (normalizeEmail(result.ticket.clientEmail) !== email) {
+      return res.status(403).json({ error: 'Not your ticket' });
+    }
+    const replyMail = ticketClientReplyTeamEmail({ email, ticket: result.ticket, body });
+    await sendTicketMail({
+      to: contactNotifyTo,
+      replyTo: email,
+      subject: replyMail.subject,
+      text: replyMail.text,
+      html: replyMail.html
+    });
+    emitPortalUpdate({ type: 'ticket_message', ticketId: result.ticket.id, clientEmail: email });
+    return res.json({ success: true, ticket: result.ticket, tickets: result.tickets });
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Failed to add message' });
+  }
+});
+
+app.post('/api/portal/tickets/:id/attachments', upload.single('file'), async (req, res) => {
+  try {
+    const auth = await requirePortalClient(req);
+    if (!auth.ok) return res.status(auth.status || 401).json({ error: auth.error });
+    const email = auth.email;
+    if (!(await clientHasActiveService(email))) {
+      return res.status(403).json({ error: 'Support uploads are only available for active service clients.' });
+    }
+    if (!req.file) return res.status(400).json({ error: 'File required' });
+    const tickets = await portalStore.listTickets(email);
+    const owned = tickets.find((t) => t.id === req.params.id);
+    if (!owned) return res.status(404).json({ error: 'Ticket not found' });
+    const url = await resolveUploadUrl(req.file);
+    const result = await portalStore.addAttachment({
+      ticketId: req.params.id,
+      fileName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      byteSize: req.file.size,
+      url,
+      uploadedBy: email
+    });
+    emitPortalUpdate({ type: 'ticket_attachment', ticketId: req.params.id, clientEmail: email });
+    return res.json({ success: true, attachment: result.attachment, ticket: result.ticket, tickets: result.tickets });
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Upload failed' });
+  }
+});
+
+app.get('/api/admin/portal/projects', async (req, res) => {
+  const auth = await requirePortalAdmin(req);
+  if (!auth.ok) return res.status(auth.status || 403).json({ error: auth.error });
+  try {
+    return res.json({ projects: await portalStore.listProjects() });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Failed to load projects' });
+  }
+});
+
+app.post('/api/admin/portal/projects', async (req, res) => {
+  try {
+    const auth = await requirePortalAdmin(req);
+    if (!auth.ok) return res.status(auth.status || 403).json({ error: auth.error });
+    const isNew = !String(req.body?.id || '').trim();
+    let previous = null;
+    if (!isNew) {
+      const all = await portalStore.listProjects();
+      previous = all.find((p) => p.id === String(req.body.id).trim()) || null;
+    }
+    const result = await portalStore.saveProject({ ...req.body, adminEmail: auth.email });
+    const project = result.project;
+
+    const statusChanged = previous && (previous.status !== project.status || Number(previous.progress) !== Number(project.progress));
+    if (isNew) {
+      const mail = projectCreatedEmail(project);
+      await sendTicketMail({ to: project.clientEmail, ...mail });
+    } else if (statusChanged) {
+      const mail = projectUpdatedEmail(project);
+      await sendTicketMail({ to: project.clientEmail, ...mail });
+    }
+
+    emitPortalUpdate({ type: 'project_saved', clientEmail: project.clientEmail, projectId: project.id });
+    return res.json({ success: true, project, projects: result.projects, created: isNew });
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Failed to save project' });
+  }
+});
+
+app.post('/api/admin/portal/projects/delete', async (req, res) => {
+  try {
+    const auth = await requirePortalAdmin(req);
+    if (!auth.ok) return res.status(auth.status || 403).json({ error: auth.error });
+    const result = await portalStore.deleteProject(String(req.body?.id || '').trim());
+    const ticketsLocked = !!result.ticketsLocked;
+    if (ticketsLocked && result.clientEmail) {
+      const lockMail = ticketsLockedEmail({ clientEmail: result.clientEmail });
+      await sendTicketMail({ to: result.clientEmail, ...lockMail });
+    }
+    emitPortalUpdate({
+      type: 'project_deleted',
+      clientEmail: result.clientEmail,
+      ticketsLocked,
+      remainingForClient: result.remainingForClient ?? 0
+    });
+    return res.json({
+      success: true,
+      projects: result.projects,
+      clientEmail: result.clientEmail,
+      ticketsLocked,
+      remainingForClient: result.remainingForClient ?? 0
+    });
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Failed to delete project' });
+  }
+});
+
+app.get('/api/admin/portal/tickets', async (req, res) => {
+  const auth = await requirePortalAdmin(req);
+  if (!auth.ok) return res.status(auth.status || 403).json({ error: auth.error });
+  try {
+    let tickets = await portalStore.listTickets();
+    const status = String(req.query.status || '').toLowerCase();
+    const q = String(req.query.q || '').toLowerCase().trim();
+    if (status && TICKET_STATUSES.has(status)) tickets = tickets.filter((t) => t.status === status);
+    if (q) {
+      tickets = tickets.filter((t) =>
+        t.clientEmail.includes(q) || t.subject.toLowerCase().includes(q) || String(t.message || '').toLowerCase().includes(q)
+      );
+    }
+    return res.json({ tickets });
+  } catch (error) {
+    return res.status(500).json({ error: error.message || 'Failed to load tickets' });
+  }
+});
+
+app.post('/api/admin/portal/tickets', async (req, res) => {
+  try {
+    const auth = await requirePortalAdmin(req);
+    if (!auth.ok) return res.status(auth.status || 403).json({ error: auth.error });
+    const adminEmail = auth.email;
+    const id = String(req.body?.id || '').trim();
+    if (!id) return res.status(400).json({ error: 'Ticket id required' });
+
+    const status = req.body?.status != null ? String(req.body.status).toLowerCase() : undefined;
+    const adminReply = req.body?.adminReply != null ? String(req.body.adminReply).trim() : '';
+    const result = await portalStore.addTicketMessage({
+      ticketId: id,
+      authorEmail: adminEmail,
+      authorRole: 'admin',
+      body: adminReply,
+      status
+    });
+
+    if (adminReply) {
+      const mail = ticketAdminReplyClientEmail({ ticket: result.ticket, adminReply });
+      await sendTicketMail({ to: result.ticket.clientEmail, ...mail });
+    } else if (status) {
+      const mail = ticketStatusClientEmail({ ticket: result.ticket });
+      await sendTicketMail({ to: result.ticket.clientEmail, ...mail });
+    }
+
+    emitPortalUpdate({ type: 'ticket_updated', ticketId: id, clientEmail: result.ticket.clientEmail });
+    return res.json({ success: true, ticket: result.ticket, tickets: result.tickets });
+  } catch (error) {
+    console.error('Update ticket failed:', error);
+    return res.status(400).json({ error: error.message || 'Failed to update ticket' });
+  }
+});
+
+app.post('/api/admin/portal/tickets/:id/attachments', upload.single('file'), async (req, res) => {
+  try {
+    const auth = await requirePortalAdmin(req);
+    if (!auth.ok) return res.status(auth.status || 403).json({ error: auth.error });
+    if (!req.file) return res.status(400).json({ error: 'File required' });
+    const url = await resolveUploadUrl(req.file);
+    const result = await portalStore.addAttachment({
+      ticketId: req.params.id,
+      fileName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      byteSize: req.file.size,
+      url,
+      uploadedBy: auth.email
+    });
+    emitPortalUpdate({ type: 'ticket_attachment', ticketId: req.params.id, clientEmail: result.ticket?.clientEmail });
+    return res.json({ success: true, attachment: result.attachment, ticket: result.ticket, tickets: result.tickets });
+  } catch (error) {
+    return res.status(400).json({ error: error.message || 'Upload failed' });
+  }
 });
 
 async function researchWeb(query) {
@@ -823,7 +1229,18 @@ app.use((req, res) => {
 });
 
 const PORT = Number(process.env.PORT) || 4000;
-const server = app.listen(PORT, () => {
+const httpServer = createServer(app);
+portalIo = new SocketServer(httpServer, {
+  cors: { origin: true, credentials: true }
+});
+portalIo.on('connection', (socket) => {
+  socket.on('portal:join', (email) => {
+    const normalized = normalizeEmail(email);
+    if (normalized) socket.join(`portal:${normalized}`);
+  });
+});
+
+const server = httpServer.listen(PORT, () => {
   console.log('Versecure Standalone Server listening on port ' + PORT);
 });
 

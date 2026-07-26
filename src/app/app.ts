@@ -30,6 +30,8 @@ export class App implements OnDestroy {
   cursorY = signal(-100);
   isHovering = signal(false);
 
+  private cursorEnabled = false;
+
   constructor() {
     afterNextRender(() => {
       const isTouchOrMobile =
@@ -41,17 +43,17 @@ export class App implements OnDestroy {
       if (!isTouchOrMobile) {
         this.lenis = new Lenis({
           autoRaf: true,
-          duration: 1.2,
+          duration: 1.05,
           easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
         });
+        this.cursorEnabled = true;
+        this.setupCursorListeners();
       }
-      
-      // Setup hover listeners for custom cursor
-      this.setupCursorListeners();
     });
   }
 
   onMouseMove(e: MouseEvent) {
+    if (!this.cursorEnabled) return;
     this.cursorX.set(e.clientX);
     this.cursorY.set(e.clientY);
   }

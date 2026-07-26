@@ -214,6 +214,11 @@ export class SupabaseService {
     return this.passwordRecoveryMode();
   }
 
+  async getAccessToken(): Promise<string> {
+    const { data: { session } } = await this.supabase.auth.getSession();
+    return session?.access_token || '';
+  }
+
   async logout() {
     await this.supabase.auth.signOut();
     this.clearPasswordRecoveryMode();

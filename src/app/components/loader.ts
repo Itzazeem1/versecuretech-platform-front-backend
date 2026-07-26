@@ -61,6 +61,9 @@ export class LoaderComponent implements OnDestroy {
   constructor() {
     afterNextRender(() => {
       const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const isMobile =
+        window.matchMedia('(max-width: 767px)').matches ||
+        window.matchMedia('(hover: none) and (pointer: coarse)').matches;
       this.ctx = gsap.context(() => {
         const tl = gsap.timeline({
           onComplete: () => {
@@ -71,31 +74,40 @@ export class LoaderComponent implements OnDestroy {
         });
 
         if (reduceMotion) {
-          tl.to(this.loaderContainer().nativeElement, { opacity: 0, duration: 0.35 });
+          tl.to(this.loaderContainer().nativeElement, { opacity: 0, duration: 0.2 });
           return;
         }
 
-        // Normal brand intro (~3.8s) — site itself stays fast underneath
+        // Mobile: short loader (~0.9s) — long intros tank PageSpeed / LCP
+        if (isMobile) {
+          tl.to(this.logo().nativeElement, { opacity: 1, y: 0, duration: 0.35, ease: 'power2.out' })
+            .to(this.progress().nativeElement, { opacity: 1, duration: 0.15 }, '-=0.1')
+            .to(this.bar().nativeElement, { width: '100%', duration: 0.35, ease: 'power1.inOut' })
+            .to(this.loaderContainer().nativeElement, { opacity: 0, duration: 0.25, ease: 'power2.in' });
+          return;
+        }
+
+        // Desktop brand intro (shorter than before for better scores)
         tl.to(this.logo().nativeElement, {
           opacity: 1,
           y: 0,
-          duration: 0.9,
+          duration: 0.55,
           ease: 'power3.out'
         })
         .to(this.progress().nativeElement, {
           opacity: 1,
-          duration: 0.4
-        }, '-=0.35')
+          duration: 0.25
+        }, '-=0.2')
         .to(this.bar().nativeElement, {
           width: '100%',
-          duration: 2.0,
+          duration: 0.9,
           ease: 'power2.inOut'
         })
         .to(this.loaderContainer().nativeElement, {
           yPercent: -100,
-          duration: 0.85,
+          duration: 0.55,
           ease: 'power4.inOut',
-          delay: 0.25
+          delay: 0.1
         });
       });
     });
