@@ -6,9 +6,9 @@
   },
   "scripts": {
     "ng": "ng",
-    "start": "node server.mjs",
-    "dev": "cross-env ng serve --port=3000 --host=0.0.0.0 --define=\"GEMINI_API_KEY=\\'${GEMINI_API_KEY}\\'\" ${DISABLE_HMR:+--live-reload=false}",
-    "build": "npm install --include=dev --no-audit --no-fund --legacy-peer-deps && npm install @angular/cli@21.2.18 @angular/build@21.2.18 @angular/compiler-cli@21.2.18 typescript@5.9.2 --no-save --no-audit --no-fund --legacy-peer-deps && npx ng build --configuration=production",
+    "start": "node api.js && node server.mjs",
+    "dev": "node api.js && cross-env ng serve --port=3000 --host=0.0.0.0 --define=\"GEMINI_API_KEY=\\'${GEMINI_API_KEY}\\'\" ${DISABLE_HMR:+--live-reload=false}",
+    "build": "node api.js && npm install --include=dev --no-audit --no-fund --legacy-peer-deps && npm install @angular/cli@21.2.18 @angular/build@21.2.18 @angular/compiler-cli@21.2.18 typescript@5.9.2 --no-save --no-audit --no-fund --legacy-peer-deps && npx ng build --configuration=production",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
     "lint": "ng lint",

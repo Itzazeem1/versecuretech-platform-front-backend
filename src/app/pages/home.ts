@@ -163,6 +163,11 @@ export class HomeComponent implements OnInit, OnDestroy {
 
   constructor() {
     afterNextRender(async () => {
+      // Wait for Versecure intro to finish so GSAP doesn't blank the hero under/after the splash
+      const started = performance.now();
+      while (!this.store.bootReady() && performance.now() - started < 4000) {
+        await new Promise((resolve) => setTimeout(resolve, 40));
+      }
       const { ScrollTrigger } = await import('gsap/ScrollTrigger');
       gsap.registerPlugin(ScrollTrigger);
       this.initGSAP(ScrollTrigger);
@@ -219,8 +224,8 @@ export class HomeComponent implements OnInit, OnDestroy {
         });
 
         philosophyTl
-          .from('.philosophy-text', { opacity: 0, y: 100, duration: 1 })
-          .from('.philosophy-image', { opacity: 0, scale: 0.8, x: 100, duration: 1 }, '<')
+          .from('.philosophy-text', { opacity: 0, y: 100, duration: 1, immediateRender: false })
+          .from('.philosophy-image', { opacity: 0, scale: 0.8, x: 100, duration: 1, immediateRender: false }, '<')
           .to('.philosophy-text', { opacity: 0, y: -100, duration: 1 }, '+=1')
           .to('.philosophy-image', { opacity: 0, scale: 1.2, x: -100, duration: 1 }, '<');
 
@@ -243,12 +248,12 @@ export class HomeComponent implements OnInit, OnDestroy {
 
       // 2. Mobile Animations (< 768px)
       mm.add("(max-width: 767px)", () => {
-        // Simpler, non-scrub Hero Fade
+        // Keep hero readable immediately — only lift slightly (no opacity blank after splash)
         gsap.from('.hero-content', {
-          y: 50,
-          opacity: 0,
-          duration: 1.5,
-          ease: 'power3.out'
+          y: 28,
+          duration: 0.9,
+          ease: 'power3.out',
+          clearProps: 'transform'
         });
 
         // Philosophy Reveal (NO PINNING)
@@ -256,22 +261,26 @@ export class HomeComponent implements OnInit, OnDestroy {
           scrollTrigger: {
             trigger: '.philosophy-section',
             start: 'top 80%',
+            toggleActions: 'play none none none'
           },
           opacity: 0,
           y: 50,
           duration: 1,
-          ease: 'power3.out'
+          ease: 'power3.out',
+          immediateRender: false
         });
 
         gsap.from('.philosophy-image', {
           scrollTrigger: {
             trigger: '.philosophy-section',
             start: 'top 70%',
+            toggleActions: 'play none none none'
           },
           opacity: 0,
           scale: 0.9,
           duration: 1,
-          ease: 'power3.out'
+          ease: 'power3.out',
+          immediateRender: false
         });
 
         // Services Reveal (NO SCRUB)
@@ -281,12 +290,13 @@ export class HomeComponent implements OnInit, OnDestroy {
             scrollTrigger: {
               trigger: service,
               start: 'top 85%',
-              toggleActions: 'play none none reverse'
+              toggleActions: 'play none none none'
             },
             y: 50,
             opacity: 0,
             duration: 0.8,
-            ease: 'power2.out'
+            ease: 'power2.out',
+            immediateRender: false
           });
         });
       });
