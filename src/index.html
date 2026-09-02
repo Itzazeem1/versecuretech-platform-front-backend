@@ -9,16 +9,88 @@
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <!-- Leaner font request (fewer weights = faster mobile) -->
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" media="print" onload="this.media='all'" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" media="print" onload="this.media='all'" />
-    <noscript>
-      <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
-      <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=swap" />
-    </noscript>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Space+Grotesk:wght@500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons&display=block" />
+    <style>
+      html, body { margin: 0; background: #0B0F1A; color: #E6EAF2; }
+      #boot-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 100000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background: #0B0F1A;
+        opacity: 1;
+        transition: opacity 0.4s ease;
+        will-change: opacity;
+      }
+      #boot-splash.done {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #boot-splash .boot-logo {
+        font-family: 'Space Grotesk', system-ui, sans-serif;
+        font-size: clamp(1.35rem, 4vw, 2rem);
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+      #boot-splash .boot-bar-track {
+        width: 200px;
+        height: 2px;
+        margin-top: 1.75rem;
+        background: rgba(255, 255, 255, 0.1);
+        overflow: hidden;
+        border-radius: 999px;
+      }
+      #boot-splash .boot-bar {
+        height: 100%;
+        width: 100%;
+        transform-origin: left center;
+        transform: scaleX(0);
+        background: #6C8CFF;
+        border-radius: 999px;
+        will-change: transform;
+        animation: boot-fill 0.95s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+      }
+      @keyframes boot-fill {
+        from { transform: scaleX(0); }
+        to { transform: scaleX(1); }
+      }
+    </style>
   </head>
   <body>
+    <div id="boot-splash">
+      <div class="boot-logo">VersecureTech</div>
+      <div class="boot-bar-track"><div class="boot-bar"></div></div>
+    </div>
     <app-root></app-root>
+    <script>
+      (function () {
+        var splash = document.getElementById('boot-splash');
+        var closed = false;
+
+        function closeSplash() {
+          if (closed) return;
+          closed = true;
+          document.documentElement.classList.add('app-ready');
+          document.body.classList.add('app-ready');
+          if (splash) {
+            splash.classList.add('done');
+            setTimeout(function () {
+              if (splash && splash.parentNode) splash.parentNode.removeChild(splash);
+            }, 420);
+          }
+          try { window.dispatchEvent(new CustomEvent('vt-boot-ready')); } catch (e) {}
+        }
+
+        // Dismiss right after the CSS fill finishes
+        setTimeout(closeSplash, 1000);
+        setTimeout(closeSplash, 1800); // failsafe
+        window.__finishBootSplash = closeSplash;
+      })();
+    </script>
   </body>
 </html>
