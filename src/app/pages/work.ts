@@ -95,18 +95,17 @@ import gsap from 'gsap';
           <div class="w-full md:w-1/3">
             <span class="text-[var(--text-muted)] font-mono text-sm tracking-widest uppercase mb-4 block">{{ 'WORK.CASE_STAY' | translate }}</span>
             <h2 class="text-4xl md:text-5xl font-display font-medium mb-6 transition-colors group-hover:text-[#ff41b4]">Stay.ai</h2>
+            <p class="text-[var(--text-muted)] text-base md:text-lg font-light leading-relaxed">
+              {{ 'WORK.CASE_STAY_DESC' | translate }}
+            </p>
           </div>
           <div class="w-full md:w-2/3 md:offset-y-12">
-            <div class="glass-panel p-10 md:p-14 rounded-[2rem] glow-hover relative overflow-hidden h-96 flex flex-col justify-between border border-[var(--text-primary)]/5 transition-colors group-hover:border-[#ff41b4]/30">
+            <div class="glass-panel p-10 md:p-14 rounded-[2rem] glow-hover relative overflow-hidden h-96 flex flex-col justify-end border border-[var(--text-primary)]/5 transition-colors group-hover:border-[#ff41b4]/30">
                <img src="/assets/images/stay-ai.png" alt="Stay.ai" 
                     loading="lazy"
                     decoding="async"
                     class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-opacity duration-700">
                <div class="w-96 h-96 absolute -top-10 -right-10 bg-[#ff41b4] blur-[100px] opacity-10 pointer-events-none group-hover:opacity-30 transition-opacity duration-1000"></div>
-               
-               <p class="text-[var(--text-muted)] text-xl font-light leading-relaxed mb-10 relative z-10 max-w-lg">
-                 {{ 'WORK.CASE_STAY_DESC' | translate }}
-               </p>
                
                <div class="flex justify-between items-end relative z-10">
                  <div class="flex gap-4">
@@ -124,18 +123,17 @@ import gsap from 'gsap';
           <div class="w-full md:w-1/3 text-left md:text-right">
             <span class="text-[var(--text-muted)] font-mono text-sm tracking-widest uppercase mb-4 block">{{ 'WORK.CASE_CORE' | translate }}</span>
             <h2 class="text-4xl md:text-5xl font-display font-medium mb-6 transition-colors group-hover:text-[#3b82f6]">Core Direction</h2>
+            <p class="text-[var(--text-muted)] text-base md:text-lg font-light leading-relaxed md:ml-auto md:max-w-sm">
+              {{ 'WORK.CASE_CORE_DESC' | translate }}
+            </p>
           </div>
           <div class="w-full md:w-2/3 md:-offset-y-12">
-            <div class="glass-panel p-10 md:p-14 rounded-[2rem] glow-hover relative overflow-hidden h-96 flex flex-col justify-between border border-[var(--text-primary)]/5 transition-colors group-hover:border-[#3b82f6]/30">
+            <div class="glass-panel p-10 md:p-14 rounded-[2rem] glow-hover relative overflow-hidden h-96 flex flex-col justify-end border border-[var(--text-primary)]/5 transition-colors group-hover:border-[#3b82f6]/30">
                <img src="/assets/images/core-direction.png" alt="Core Direction" 
                     loading="lazy"
                     decoding="async"
                     class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-opacity duration-700">
                <div class="w-96 h-96 absolute -bottom-10 -left-10 bg-[#3b82f6] blur-[100px] opacity-10 pointer-events-none group-hover:opacity-30 transition-opacity duration-1000"></div>
-               
-               <p class="text-[var(--text-muted)] text-xl font-light leading-relaxed mb-10 relative z-10 max-w-lg">
-                 {{ 'WORK.CASE_CORE_DESC' | translate }}
-               </p>
 
                <div class="flex justify-between items-end relative z-10">
                  <div class="flex gap-4">
@@ -153,18 +151,17 @@ import gsap from 'gsap';
           <div class="w-full md:w-1/3">
             <span class="text-[var(--text-muted)] font-mono text-sm tracking-widest uppercase mb-4 block">{{ 'WORK.CASE_CLIMB' | translate }}</span>
             <h2 class="text-4xl md:text-5xl font-display font-medium mb-6 transition-colors group-hover:text-[#f59e0b]">Climb Credit</h2>
+            <p class="text-[var(--text-muted)] text-base md:text-lg font-light leading-relaxed">
+              {{ 'WORK.CASE_CLIMB_DESC' | translate }}
+            </p>
           </div>
           <div class="w-full md:w-2/3 md:offset-y-12">
-            <div class="glass-panel p-10 md:p-14 rounded-[2rem] glow-hover relative overflow-hidden h-96 flex flex-col justify-between border border-[var(--text-primary)]/5 transition-colors group-hover:border-[#f59e0b]/30">
+            <div class="glass-panel p-10 md:p-14 rounded-[2rem] glow-hover relative overflow-hidden h-96 flex flex-col justify-end border border-[var(--text-primary)]/5 transition-colors group-hover:border-[#f59e0b]/30">
                <img src="/assets/images/climb-credit.png" alt="Climb Credit" 
                     loading="lazy"
                     decoding="async"
                     class="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-90 transition-opacity duration-700">
                <div class="w-[800px] h-32 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#f59e0b] blur-[80px] opacity-5 pointer-events-none group-hover:opacity-10 transition-opacity duration-1000"></div>
-               
-               <p class="text-[var(--text-muted)] text-xl font-light leading-relaxed mb-10 relative z-10 max-w-lg">
-                 {{ 'WORK.CASE_CLIMB_DESC' | translate }}
-               </p>
                
                <div class="flex justify-between items-end relative z-10">
                  <div class="flex gap-4">
@@ -212,12 +209,14 @@ export class WorkComponent implements OnDestroy {
       sections.forEach((section: unknown) => {
         gsap.from(section as gsap.DOMTarget, {
           opacity: 0,
-          y: 80,
-          duration: 1.2 / speed,
+          y: 48,
+          duration: 0.9 / speed,
+          ease: 'power2.out',
+          immediateRender: false,
           scrollTrigger: {
             trigger: section as gsap.DOMTarget,
-            start: "top 85%",
-            scrub: true
+            start: 'top 88%',
+            toggleActions: 'play none none none'
           }
         });
       });

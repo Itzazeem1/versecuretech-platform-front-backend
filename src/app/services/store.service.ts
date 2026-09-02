@@ -18,6 +18,8 @@ export class StoreService {
   // System States
   readonly sceneState = signal<'loading' | 'intro' | 'active' | 'interaction'>('loading');
   readonly liveUserCount = signal<number>(1);
+  /** True after the Versecure intro loader finishes dismissing. */
+  readonly bootReady = signal(false);
   
   // Auth State
   readonly adminUser = signal<AdminUser | null>(null);
@@ -32,6 +34,7 @@ export class StoreService {
   toggleAnimations() { this.enableAnimations.update(v => !v); }
   setSceneState(state: 'loading' | 'intro' | 'active' | 'interaction') { this.sceneState.set(state); }
   setLiveUserCount(count: number) { this.liveUserCount.set(count); }
+  markBootReady() { this.bootReady.set(true); }
   
   loginAdmin(email: string) {
     if (email === 'azeem.makhdum6@gmail.com' || email === 'abbas585@gmail.com') {
