@@ -145,17 +145,18 @@ export class ServicesComponent implements OnDestroy {
     this.ctx = gsap.context(() => {
       const speed = this.store.animationSpeed();
 
-      // Product Scroll Reveal
       const sections = gsap.utils.toArray('.scene-anim');
       sections.forEach((section: unknown) => {
         gsap.from(section as gsap.DOMTarget, {
           opacity: 0,
-          y: 80,
-          duration: 1.2 / speed,
+          y: 48,
+          duration: 0.9 / speed,
+          ease: 'power2.out',
+          immediateRender: false,
           scrollTrigger: {
             trigger: section as gsap.DOMTarget,
-            start: "top 85%",
-            scrub: true
+            start: 'top 88%',
+            toggleActions: 'play none none none'
           }
         });
       });

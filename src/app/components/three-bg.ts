@@ -11,8 +11,9 @@ import { StoreService } from '../services/store.service';
   template: `
     <div 
       #canvasContainer 
-      class="fixed inset-0 z-[-1] pointer-events-none transition-opacity duration-1000 bg-[var(--bg-main)]"
+      class="fixed inset-0 z-0 pointer-events-none transition-opacity duration-1000"
       [style.opacity]="store.enable3D() ? store.glowIntensity() : 0"
+      aria-hidden="true"
     >
       @if (useStaticFallback()) {
         <div class="absolute inset-0 three-static-bg"></div>

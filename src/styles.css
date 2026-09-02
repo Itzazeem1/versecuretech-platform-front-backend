@@ -41,6 +41,16 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Material icon ligatures can flash as raw words before the font loads */
+.material-icons {
+  font-family: 'Material Icons', sans-serif;
+  font-weight: normal;
+  font-style: normal;
+  font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  speak: never;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-display);
   font-weight: 700;

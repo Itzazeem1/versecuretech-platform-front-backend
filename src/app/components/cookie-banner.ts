@@ -1,13 +1,14 @@
 import { Component, PLATFORM_ID, inject, signal, OnInit } from '@angular/core';
 import { CommonModule, isPlatformBrowser } from '@angular/common';
 import { TranslatePipe } from '../pipes/translate.pipe';
+import { StoreService } from '../services/store.service';
 
 @Component({
   selector: 'app-cookie-banner',
   standalone: true,
   imports: [CommonModule, TranslatePipe],
   template: `
-    @if (!hasResponded()) {
+    @if (bootReady() && !hasResponded()) {
       <div 
         class="fixed bottom-0 left-0 w-full p-6 z-[100] transform translate-y-0 opacity-100 transition-all duration-500 glass-panel border-t border-[var(--text-primary)]/10"
         style="backdrop-filter: blur(20px); background: rgba(7, 11, 20, 0.85);"
@@ -43,7 +44,9 @@ import { TranslatePipe } from '../pipes/translate.pipe';
 })
 export class CookieBannerComponent implements OnInit {
   private platformId = inject(PLATFORM_ID);
+  private store = inject(StoreService);
   hasResponded = signal(true); // Default true for SSR
+  bootReady = this.store.bootReady;
 
   ngOnInit() {
     if (isPlatformBrowser(this.platformId)) {
