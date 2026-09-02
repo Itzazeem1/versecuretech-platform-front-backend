@@ -87,6 +87,11 @@ export class TranslationService {
     this.catalogVersion();
     this.currentLang();
 
+    // Avoid flashing raw keys like HOME.HERO_TITLE before the catalog loads
+    if (this.catalogVersion() === 0) {
+      return '';
+    }
+
     const keys = key.split('.');
     let value: any = this.translations();
 

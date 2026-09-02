@@ -14,7 +14,9 @@ import Lenis from 'lenis';
   },
   template: `
     <app-loader></app-loader>
-    <router-outlet />
+    <div class="app-shell">
+      <router-outlet />
+    </div>
     <app-cookie-banner></app-cookie-banner>
     
     <!-- Custom Cursor -->
